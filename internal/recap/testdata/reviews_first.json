@@ -1,0 +1,22 @@
+{
+  "data": {
+    "viewer": {
+      "contributionsCollection": {
+        "pullRequestReviewContributions": {
+          "nodes": [
+            {
+              "occurredAt": "2025-01-01T00:00:00Z",
+              "repository": {
+                "nameWithOwner": "you/a"
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "next"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "data": {
+    "viewer": {
+      "contributionsCollection": {
+        "commitContributionsByRepository": [
+          {
+            "repository": {
+              "nameWithOwner": "you/public",
+              "isPrivate": false,
+              "visibility": "PUBLIC"
+            },
+            "contributions": {
+              "nodes": [
+                {
+                  "occurredAt": "{{date}}",
+                  "commitCount": 4
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            }
+          },
+          {
+            "repository": {
+              "nameWithOwner": "you/secret",
+              "isPrivate": true,
+              "visibility": "PRIVATE"
+            },
+            "contributions": {
+              "nodes": [
+                {
+                  "occurredAt": "{{date}}",
+                  "commitCount": 8
+                }
+              ],
+              "pageInfo": {
+                "hasNextPage": false
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "data": {
+    "viewer": {
+      "contributionsCollection": {
+        "issueContributions": {
+          "nodes": [
+            {
+              "occurredAt": "2025-01-01T00:00:00Z",
+              "issue": {
+                "repository": {
+                  "nameWithOwner": "you/public",
+                  "isPrivate": false
+                }
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "next"
+          }
+        }
+      }
+    }
+  }
+}
