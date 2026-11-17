@@ -1,0 +1,5 @@
+[tools]
+watchexec = "latest"
+
+[tasks.dev]
+run = "watchexec --wrap-process session -r -c -e go -- 'go run .'"
