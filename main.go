@@ -1,26 +1,33 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
+	"os"
 
-	"github.com/cli/go-gh/v2/pkg/api"
+	tea "charm.land/bubbletea/v2"
+	"github.com/ikura-hamu/gh-recap/internal/recap"
+	"github.com/ikura-hamu/gh-recap/internal/tui"
 )
 
-func main() {
-	fmt.Println("hi world, this is the gh-recap extension!")
-	client, err := api.DefaultRESTClient()
-	if err != nil {
-		fmt.Println(err)
-		return
+func run() error {
+	options, err := parseOptions(os.Args[1:], os.Stderr)
+	if err == flag.ErrHelp {
+		return nil
 	}
-	response := struct {Login string}{}
-	err = client.Get("user", &response)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
-	fmt.Printf("running as %s\n", response.Login)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err = tea.NewProgram(tui.New(ctx, options, &recap.GitHub{})).Run()
+	return err
 }
 
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "gh recap:", err)
+		os.Exit(1)
+	}
+}
