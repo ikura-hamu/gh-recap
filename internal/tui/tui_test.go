@@ -15,7 +15,7 @@ import (
 
 func pressKey(s string) tea.KeyPressMsg {
 	if s == "space" {
-		return tea.KeyPressMsg{Code: tea.KeySpace}
+		return tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 	}
 	if s == "enter" {
 		return tea.KeyPressMsg{Code: tea.KeyEnter}
@@ -74,6 +74,60 @@ func TestWaitingForData(t *testing.T) {
 	m = update(m, tickMsg(m.lastTick.Add(time.Minute)))
 	if m.page != pageOverview || m.elapsed != 0 {
 		t.Fatal("loading consumed playback time")
+	}
+}
+
+func TestPlaybackSpeedKeys(t *testing.T) {
+	m := readyModel()
+	m = update(m, tickMsg(m.lastTick.Add(2*time.Second)))
+	for _, step := range []struct {
+		key   string
+		speed float64
+	}{
+		{"j", 0.5}, {"j", 0.5}, {"k", 1}, {"k", 2}, {"k", 4}, {"k", 4}, {"j", 2},
+	} {
+		m = update(m, pressKey(step.key))
+		if m.speed != step.speed || !strings.Contains(m.statusView(), fmt.Sprintf(" · %g× · ", step.speed)) {
+			t.Fatalf("after %q, want %g× in model and status, got %g×", step.key, step.speed, m.speed)
+		}
+		if m.page != pageOverview || m.elapsed != 2*time.Second {
+			t.Fatal("changing speed should preserve the page and its progress")
+		}
+	}
+	m = update(m, tickMsg(m.lastTick.Add(3*time.Second)))
+	if m.page != pageCalendar || m.speed != 2 {
+		t.Fatal("at 2×, three real seconds should finish the remaining six seconds")
+	}
+
+	m = update(m, pressKey("enter"))
+	m = update(m, pressKey("j"))
+	if m.viewport.YOffset() != 1 || m.speed != 2 {
+		t.Fatal("j should scroll down in details while preserving speed")
+	}
+	m = update(m, pressKey("k"))
+	if m.viewport.YOffset() != 0 || m.speed != 2 {
+		t.Fatal("k should scroll up in details while preserving speed")
+	}
+}
+
+func TestSpaceFreezesVisiblePlayback(t *testing.T) {
+	m := update(readyModel(), pressKey("l"))
+	m = update(m, pressKey("space"))
+	if m.transition.active() || !strings.Contains(ansi.Strip(m.statusView()), "PAUSED") {
+		t.Fatal("space should settle the slide and show PAUSED")
+	}
+	paused := m.View().Content
+	repeat := pressKey("space")
+	repeat.IsRepeat = true
+	m = update(m, repeat)
+	m = update(m, tickMsg(m.lastTick.Add(20*time.Second)))
+	if m.View().Content != paused {
+		t.Fatal("paused playback and background should stay still")
+	}
+	m = update(m, pressKey("space"))
+	m = update(m, tickMsg(m.lastTick.Add(time.Second)))
+	if m.paused || m.elapsed != time.Second || m.sparkleFrame != 1 {
+		t.Fatal("space should resume playback and background motion")
 	}
 }
 

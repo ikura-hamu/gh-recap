@@ -32,10 +32,11 @@ The default year is the current local year. API date boundaries use UTC, January
 | Key | Action |
 | --- | --- |
 | `←` / `→`, `h` / `l` | Previous / next highlight |
-| `Space` | Pause / resume autoplay |
+| `j` / `k` | Halve / double autoplay speed (0.5× to 4×) |
+| `Space` | Pause / resume autoplay and background animation |
 | `Enter` | Open / close details |
 | `Esc` | Return from details |
-| `↑` / `↓`, `k` / `j` | Scroll |
+| `↑` / `↓` | Scroll. In details, `k` / `j` also scroll |
 | `Home` / `End` | Scroll to top / bottom |
 | `PgUp` / `PgDn`, `Ctrl+B` / `Ctrl+F` | Scroll one page |
 | `q`, `Ctrl+C` | Quit |

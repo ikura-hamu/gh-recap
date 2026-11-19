@@ -62,7 +62,7 @@ type cachedViewport struct {
 }
 
 func (m Model) titleFlashing() bool {
-	return !m.options.NoAnimation && m.transitionFrame < 4
+	return !m.options.NoAnimation && !m.paused && m.transitionFrame < 4
 }
 
 func (m Model) viewportKey() viewportKey {
@@ -256,8 +256,13 @@ func (m Model) statusView() string {
 		state = "FINISHED"
 	case m.showDetails:
 		state = "DETAILS"
-	case m.paused:
-		state = "PAUSED"
+	}
+	if m.paused {
+		if state == "PLAYING" {
+			state = "PAUSED"
+		} else {
+			state = "PAUSED · " + state
+		}
 	}
 	if len(m.failed) > 0 || len(m.warnings) > 0 {
 		state += " · INCOMPLETE"
@@ -270,7 +275,7 @@ func (m Model) statusView() string {
 	if !m.options.NoAnimation && len(m.loaded) < len(recap.Sources) && m.identityError == nil {
 		indicator = m.loading.View()
 	}
-	status := fmt.Sprintf("%s %s · %d/%d sources · %02d/%d", indicator, state, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
+	status := fmt.Sprintf("%s %s · %g× · %d/%d sources · %02d/%d", indicator, state, m.speed, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
 	if len(m.warnings) > 0 && m.identityError == nil {
 		status += " · Enter for warnings"
 	}

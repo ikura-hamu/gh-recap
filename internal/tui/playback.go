@@ -44,6 +44,10 @@ var pageDefinitions = [pageCount]pageDefinition{
 
 func (m Model) duration() time.Duration { return pageDefinitions[m.page].Duration }
 
+func (m *Model) changeSpeed(factor float64) {
+	m.speed = min(4, max(0.5, m.speed*factor))
+}
+
 func (m Model) ready() bool {
 	source := pageDefinitions[m.page].Source
 	if source != "" {
@@ -62,7 +66,7 @@ func (m *Model) move(delta int) {
 	if next < 0 || next >= pageCount {
 		return
 	}
-	if !m.options.NoAnimation && !m.tooSmall() && m.login != "" && m.identityError == nil {
+	if !m.options.NoAnimation && !m.paused && !m.tooSmall() && m.login != "" && m.identityError == nil {
 		from := m.transitionBodyView()
 		m.transition = pageTransition{from: from, direction: delta, id: m.transition.id + 1}
 	}
@@ -76,7 +80,7 @@ func (m *Model) move(delta int) {
 func (m *Model) advancePlayback(now time.Time) {
 	canAdvance := !m.tooSmall() && !m.lastTick.IsZero() && !m.paused && !m.showDetails && !m.playbackFinished && m.ready() && m.identityError == nil
 	if canAdvance {
-		m.elapsed += now.Sub(m.lastTick)
+		m.elapsed += time.Duration(float64(now.Sub(m.lastTick)) * m.speed)
 		if m.elapsed >= m.duration() {
 			if m.page == pageSummary {
 				m.playbackFinished = true

@@ -40,6 +40,7 @@ type Model struct {
 	paused           bool
 	showDetails      bool
 	playbackFinished bool
+	speed            float64
 	elapsed          time.Duration
 	lastTick         time.Time
 
@@ -55,6 +56,7 @@ func New(ctx context.Context, options recap.Options, api recap.API) Model {
 		api:      api,
 		loaded:   make(map[string]bool),
 		failed:   make(map[string]bool),
+		speed:    1,
 		width:    80,
 		height:   28,
 		viewport: viewport.New(),
@@ -127,7 +129,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failed[msg.Kind] = true
 			m.warnings = append(m.warnings, msg.Kind+": "+msg.Err.Error())
 		}
-		m.elapsed = 0
+		if !m.paused {
+			m.elapsed = 0
+		}
 		if msg.Kind == recap.KindCommits {
 			if msg.Err != nil || len(msg.Warnings) > 0 {
 				m.failed[recap.KindCoauthors] = true
@@ -148,7 +152,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 	case tickMsg:
-		if !m.options.NoAnimation {
+		if !m.options.NoAnimation && !m.paused {
 			m.sparkleFrame++
 		}
 		m.advancePlayback(time.Time(msg))
