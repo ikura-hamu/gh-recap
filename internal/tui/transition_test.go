@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/ikura-hamu/gh-recap/internal/recap"
 )
 
 func TestHorizontalTransition(t *testing.T) {
@@ -85,5 +86,18 @@ func TestTransitionSliceWideCharacters(t *testing.T) {
 		if lipgloss.Width(part) != 10-left {
 			t.Fatalf("slice at cell %d has incorrect width", left)
 		}
+	}
+}
+
+func TestTransitionShowsNewCollectionResults(t *testing.T) {
+	m := readyModel()
+	m.page = pageCommits
+	m = update(m, pressKey("l"))
+	m = update(m, recap.Result{Kind: recap.KindCoauthors, Coauthors: map[string]int{"@late-result": 10}})
+	for m.transition.active() {
+		m = update(m, transitionTickMsg{id: m.transition.id})
+	}
+	if !strings.Contains(ansi.Strip(m.View().Content), "@late-result") {
+		t.Fatal("co-author results received during the transition did not reach the visible page")
 	}
 }

@@ -11,8 +11,8 @@ import (
 )
 
 // A separate clock keeps page movement smooth without speeding up playback
-// or the decorative background. Each transition lasts about 360 ms.
-const transitionFrames = 12
+// or the decorative background. Each transition lasts about 240 ms.
+const transitionFrames = 8
 
 type pageTransition struct {
 	from      string
@@ -37,8 +37,8 @@ func (m Model) transitionBodyView() string {
 		return body
 	}
 	height, width := m.bodyHeight(), m.contentWidth()
-	from := transitionLines(m.transition.from, width, height)
-	to := transitionLines(body, width, height)
+	from := transitionRows(m.transition.from, height)
+	to := transitionRows(body, height)
 	progress := float64(m.transition.frame) / transitionFrames
 	// Ease out so the incoming page settles gently into place.
 	offset := int(math.Round((1 - math.Pow(1-progress, 3)) * float64(width)))
@@ -57,16 +57,11 @@ func transitionSlice(line string, left, right int) string {
 	return part + strings.Repeat(" ", max(0, right-left-lipgloss.Width(part)))
 }
 
-// Clip by terminal cells, preserving ANSI styles and wide Unicode glyphs.
-// Padding makes every frame occupy the same rectangle, including short pages.
-func transitionLines(body string, width, height int) []string {
+// transitionSlice clips and pads each row when it is composed into the frame.
+func transitionRows(body string, height int) []string {
 	lines := strings.Split(body, "\n")
-	result := make([]string, height)
-	for row := range result {
-		if row < len(lines) {
-			result[row] = ansi.Truncate(lines[row], width, "")
-		}
-		result[row] += strings.Repeat(" ", max(0, width-lipgloss.Width(result[row])))
+	if len(lines) < height {
+		lines = append(lines, make([]string, height-len(lines))...)
 	}
-	return result
+	return lines[:height]
 }

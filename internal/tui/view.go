@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -25,7 +26,7 @@ func (m Model) scrollLayout() contentLayout {
 	}
 
 	titleStyle := ink(m.color()).Bold(true)
-	if !m.options.NoAnimation && m.transitionFrame < 4 {
+	if m.titleFlashing() {
 		titleStyle = titleStyle.Foreground(lipgloss.Color("#FFF1FA"))
 	}
 	parts := []string{
@@ -48,8 +49,61 @@ func (m Model) scrollLayout() contentLayout {
 	}
 }
 
-// Keep the viewport content and dimensions in sync after data or size changes.
+type viewportKey struct {
+	page, width, height int
+	details, flash      bool
+	loadingFrame        uint64
+	calendarDate        string
+}
+
+type cachedViewport struct {
+	key     viewportKey
+	heading string
+}
+
+func (m Model) titleFlashing() bool {
+	return !m.options.NoAnimation && m.transitionFrame < 4
+}
+
+func (m Model) viewportKey() viewportKey {
+	key := viewportKey{page: m.page, width: m.width, height: m.height, details: m.showDetails}
+	if m.page == pageCalendar && !m.showDetails {
+		// The calendar starts showing a new cell at midnight UTC.
+		now := time.Now().UTC()
+		if m.options.Year == now.Year() {
+			key.calendarDate = now.Format(time.DateOnly)
+		}
+	}
+	if !m.options.NoAnimation {
+		key.flash = m.titleFlashing()
+		if m.page == pageOverview && !m.showDetails && !m.ready() {
+			key.loadingFrame = m.sparkleFrame % collectionOrbitSize
+		}
+	}
+	return key
+}
+
+func (m *Model) syncViewport() {
+	if m.tooSmall() || m.login == "" || m.identityError != nil {
+		return
+	}
+	key := m.viewportKey()
+	if m.viewportCache != nil && m.viewportCache.key == key {
+		return
+	}
+	heading, view := m.buildViewport()
+	m.viewport = view
+	m.viewportCache = &cachedViewport{key: key, heading: heading}
+}
+
 func (m Model) scrollViewport() (string, viewport.Model) {
+	if m.viewportCache != nil && m.viewportCache.key == m.viewportKey() {
+		return m.viewportCache.heading, m.viewport
+	}
+	return m.buildViewport()
+}
+
+func (m Model) buildViewport() (string, viewport.Model) {
 	layout := m.scrollLayout()
 	view := m.viewport
 	view.SetWidth(m.dataWidth())
@@ -74,7 +128,12 @@ func (m Model) View() tea.View {
 		MaxHeight(max(1, m.height)).
 		Padding(verticalPadding, horizontalPadding).
 		Render(content)
-	return m.screenView(m.sparkleBackground(content))
+	// The slide is already moving the entire body. Resume the background when
+	// it settles so the high-frequency slide ticks only draw one animation.
+	if !m.transition.active() {
+		content = m.sparkleBackground(content)
+	}
+	return m.screenView(content)
 }
 
 func (m Model) sizeWarning() string {

@@ -43,8 +43,9 @@ type Model struct {
 	elapsed          time.Duration
 	lastTick         time.Time
 
-	loading  spinner.Model
-	viewport viewport.Model
+	loading       spinner.Model
+	viewport      viewport.Model
+	viewportCache *cachedViewport
 }
 
 func New(ctx context.Context, options recap.Options, api recap.API) Model {
@@ -103,6 +104,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading, cmd = m.loading.Update(msg)
 		return m, cmd
 	case viewerMsg:
+		m.viewportCache = nil
 		m.login = msg.login
 		m.identityError = msg.err
 		if msg.err != nil {
@@ -114,6 +116,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(commands...)
 	case recap.Result:
+		m.viewportCache = nil
 		m.loaded[msg.Kind] = true
 		m.events = append(m.events, msg.Events...)
 		if msg.Kind == recap.KindCoauthors {
@@ -140,7 +143,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastTick = time.Time{}
 		}
 	case tea.KeyPressMsg:
-		_, m.viewport = m.scrollViewport()
+		m.syncViewport()
 		if cmd := m.handleKey(msg); cmd != nil {
 			return m, cmd
 		}
@@ -151,7 +154,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.advancePlayback(time.Time(msg))
 		command = tick()
 	}
-	_, m.viewport = m.scrollViewport()
+	m.syncViewport()
 	if m.transition.active() && m.transition.id != previousTransition {
 		command = tea.Batch(command, transitionTick(m.transition.id))
 	}
