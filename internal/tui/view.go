@@ -33,13 +33,13 @@ func (m Model) scrollLayout() contentLayout {
 		m.banner(headingWidth),
 	}
 	if content.Metric != "" {
-		parts = append(parts, "", m.metricView(content.Metric, headingWidth), "")
+		parts = append(parts, metricPadding+m.metricView(content.Metric, headingWidth)+metricPadding)
 	}
 	parts = append(parts, titleStyle.Render(ansi.Wrap(content.Title, headingWidth, " ")))
 	heading := strings.Join(parts, "\n")
-	height := max(1, m.bodyHeight()-lipgloss.Height(heading)-2)
+	height := max(1, m.bodyHeight()-lipgloss.Height(heading)-len(headingGap)-scrollHintRows)
 	if m.wide() {
-		height = max(1, m.bodyHeight()-1)
+		height = max(1, m.bodyHeight()-scrollHintRows)
 	}
 	return contentLayout{
 		Heading:        heading,
@@ -48,7 +48,7 @@ func (m Model) scrollLayout() contentLayout {
 	}
 }
 
-// Keep the viewport's content and dimensions in sync after data or size changes.
+// Keep the viewport content and dimensions in sync after data or size changes.
 func (m Model) scrollViewport() (string, viewport.Model) {
 	layout := m.scrollLayout()
 	view := m.viewport
@@ -65,14 +65,14 @@ func (m Model) View() tea.View {
 		return m.screenView(m.sizeWarning())
 	}
 	width := m.contentWidth()
-	body := lipgloss.NewStyle().Height(m.bodyHeight()).Render(m.transitionBodyView())
+	body := lipgloss.NewStyle().Height(m.bodyHeight()).MaxHeight(m.bodyHeight()).Render(m.transitionBodyView())
 	content := m.headerView(width) + "\n\n" + body + "\n" +
-		m.playbackBar(width) + "\n" + ink(m.color()).Render(m.statusView()) + "\n" + m.helpView(width)
+		m.playbackBar(width) + "\n" + ink(m.color()).Render(ansi.Truncate(m.statusView(), width, "…")) + "\n" + m.helpView(width)
 	content = lipgloss.NewStyle().Width(width).Render(content)
 	content = lipgloss.NewStyle().
 		MaxWidth(max(1, m.width)).
 		MaxHeight(max(1, m.height)).
-		Padding(1, horizontalPadding).
+		Padding(verticalPadding, horizontalPadding).
 		Render(content)
 	return m.screenView(m.sparkleBackground(content))
 }
@@ -134,7 +134,7 @@ func (m Model) bodyView() string {
 			m.identityError.Error() + "\n\nRun gh auth login, then try again.\nOr explore with: gh recap --demo"
 	}
 	if m.login == "" {
-		return m.banner(m.contentWidth()) + "\n\nConnecting to GitHub…"
+		return m.banner(m.contentWidth()) + "\n\n" + m.collectionView(m.contentWidth())
 	}
 
 	heading, view := m.scrollViewport()
@@ -145,15 +145,47 @@ func (m Model) bodyView() string {
 		body += muted.Render(fmt.Sprintf("\n↑/↓ scroll · %d–%d / %d", first, last, view.TotalLineCount()))
 	}
 	if !m.wide() {
-		return heading + "\n\n" + body
+		return heading + headingGap + body
 	}
 	divider := strings.TrimSuffix(strings.Repeat("│\n", m.bodyHeight()), "\n")
 	return lipgloss.JoinHorizontal(lipgloss.Top,
 		lipgloss.NewStyle().Width(sidebarWidth).Render(heading),
 		ink(m.color()).Render(divider),
-		"  ",
+		strings.Repeat(" ", columnGap-1),
 		lipgloss.NewStyle().Width(m.dataWidth()).Render(body),
 	)
+}
+
+const collectionOrbitSize = 8
+
+func (m Model) collectionView(width int) string {
+	// A large orbit remains visible even before the first source returns.
+	positions := [collectionOrbitSize][2]int{{2, 0}, {4, 0}, {4, 1}, {4, 2}, {2, 2}, {0, 2}, {0, 1}, {0, 0}}
+	frame := int(m.sparkleFrame % uint64(len(positions)))
+	var rows [3]string
+	for y := range rows {
+		for x := 0; x < 5; x++ {
+			cell := " "
+			for i, position := range positions {
+				if position == [2]int{x, y} {
+					cell = muted.Render("·")
+					if i == frame || m.options.NoAnimation {
+						cell = accent.Render("●")
+					}
+				}
+			}
+			rows[y] += cell
+		}
+	}
+	message := "Collecting your GitHub activity…"
+	if m.login == "" {
+		message = "Connecting to GitHub…"
+	}
+	label := accent.Render("COLLECTING") + "\n" + message +
+		fmt.Sprintf("\n%d / %d sources collected", len(m.loaded), len(recap.Sources))
+	panel := lipgloss.JoinHorizontal(lipgloss.Center, strings.Join(rows[:], "\n"), "   ", label)
+	bar := progressBar(float64(len(m.loaded))/float64(len(recap.Sources)), min(40, max(1, width-8)), m.color())
+	return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(panel + "\n\n" + bar)
 }
 
 func (m Model) statusView() string {
@@ -171,9 +203,6 @@ func (m Model) statusView() string {
 	if len(m.failed) > 0 || len(m.warnings) > 0 {
 		state += " · INCOMPLETE"
 	}
-	if len(m.warnings) > 0 {
-		state += " · Enter for warnings"
-	}
 	if m.identityError != nil {
 		state = "CONNECTION FAILED"
 	}
@@ -182,7 +211,11 @@ func (m Model) statusView() string {
 	if !m.options.NoAnimation && len(m.loaded) < len(recap.Sources) && m.identityError == nil {
 		indicator = m.loading.View()
 	}
-	return fmt.Sprintf("%s %s · %d/%d sources · %02d/%d", indicator, state, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
+	status := fmt.Sprintf("%s %s · %d/%d sources · %02d/%d", indicator, state, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
+	if len(m.warnings) > 0 && m.identityError == nil {
+		status += " · Enter for warnings"
+	}
+	return status
 }
 
 func (m Model) playbackBar(width int) string {

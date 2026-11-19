@@ -73,3 +73,25 @@ func TestKindMetricStates(t *testing.T) {
 		t.Fatal("details should retain ordinary numeric text")
 	}
 }
+
+func TestEncoreMetricsFitMinimumWideTerminal(t *testing.T) {
+	m := readyModel()
+	m.page = pageSummary
+	m.width, m.height = wideWidth, minimumHeight
+	_, view := m.scrollViewport()
+	visible := ansi.Strip(view.View())
+	for _, label := range []string{"commits", "pull requests", "reviews", "issues", "new", "repositories", "active days", "longest streak", "Enter to explore"} {
+		if !strings.Contains(visible, label) {
+			t.Errorf("missing %q in the visible ENCORE panel", label)
+		}
+	}
+	if !strings.ContainsAny(visible, "█▀▄") || view.TotalLineCount() > view.Height() {
+		t.Fatal("large ENCORE metrics should fit without scrolling")
+	}
+	lines := strings.Split(visible, "\n")
+	for i, line := range lines[:len(lines)-1] {
+		if strings.Contains(line, "commits") && strings.TrimSpace(lines[i+1]) != "" {
+			t.Fatal("ENCORE should leave a blank line between metric rows")
+		}
+	}
+}

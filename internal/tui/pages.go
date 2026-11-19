@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/ikura-hamu/gh-recap/internal/recap"
 )
 
@@ -34,19 +36,17 @@ func (m Model) content() pageContent {
 
 	switch m.page {
 	case pageOverview:
-		return pageContent{
+		content := pageContent{
 			Eyebrow: "YOUR YEAR, REPLAYED.",
 			Title:   "recorded contributions",
 			Metric:  compactCount(stats.Total),
-			Body: fmt.Sprintf(`@%s, you showed up.
-
-%s recorded contributions
-%s active days · %s repositories
-
-Your work has a story. Let's rewind.`,
-				m.login, mint.Render(fmt.Sprint(stats.Total)),
-				mint.Render(fmt.Sprint(stats.ActiveDays)), mint.Render(fmt.Sprint(len(stats.Repos)))),
+			Body:    m.overviewBody(stats),
 		}
+		if !m.ready() {
+			content.Metric = ""
+			content.Title = "Collecting your year"
+		}
+		return content
 	case pageCalendar:
 		return pageContent{
 			Eyebrow: "LITTLE DAYS. BIG YEAR.", Title: "Your activity map",
@@ -108,23 +108,86 @@ Your work has a story. Let's rewind.`,
 	default:
 		return pageContent{
 			Eyebrow: "THAT WAS YOUR YEAR.", Title: fmt.Sprintf("%d · @%s", m.options.Year, m.login),
-			Body: fmt.Sprintf(`%s commits     %s pull requests
-%s reviews     %s issues
-%s new repositories
-
-%d active days. %d-day longest streak.
-
-Thanks for showing up. See you in the next commit.
-
-Enter to explore all the details.`,
-				m.number(recap.KindCommits, stats.Kinds[recap.KindCommits]),
-				m.number(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests]),
-				m.number(recap.KindReviews, stats.Kinds[recap.KindReviews]),
-				m.number(recap.KindIssues, stats.Kinds[recap.KindIssues]),
-				m.number(recap.KindRepositories, stats.Kinds[recap.KindRepositories]),
-				stats.ActiveDays, stats.Streak),
+			Body: m.encoreBody(stats),
 		}
 	}
+}
+
+func (m Model) overviewBody(stats recap.Stats) string {
+	if !m.ready() {
+		return m.collectionView(m.dataWidth())
+	}
+	width := m.dataWidth()
+	compact := m.bodyHeight() < 20
+	total := statistic(stats.Total, "recorded contributions", width, colors[0], compact)
+	half := (width - 4) / 2
+	activity := lipgloss.JoinHorizontal(lipgloss.Top,
+		lipgloss.NewStyle().Width(half).Render(statistic(stats.ActiveDays, "active days", half, colors[1], compact)),
+		"    ", statistic(len(stats.Repos), "repositories", half, colors[4], compact))
+	return fmt.Sprintf("@%s, you showed up.\n\n%s\n\n%s\n\nYour work has a story. Let's rewind.", m.login, total, activity)
+}
+
+func (m Model) encoreBody(stats recap.Stats) string {
+	metrics := [...]struct {
+		kind, label string
+		count       int
+	}{
+		{recap.KindCommits, "commits", stats.Kinds[recap.KindCommits]},
+		{recap.KindPullRequests, "pull requests", stats.Kinds[recap.KindPullRequests]},
+		{recap.KindReviews, "reviews", stats.Kinds[recap.KindReviews]},
+		{recap.KindIssues, "issues", stats.Kinds[recap.KindIssues]},
+		{recap.KindRepositories, "new repositories", stats.Kinds[recap.KindRepositories]},
+		{"", "active days", stats.ActiveDays},
+		{"", "longest streak", stats.Streak},
+	}
+	columns := 3
+	if m.bodyHeight() < 16 {
+		// Use two rows on short terminals so the gap and all metrics fit.
+		columns = 4
+	}
+	gap := "  "
+	if columns == 4 && m.dataWidth() < columns*len("longest streak")+len(gap)*(columns-1) {
+		gap = " "
+	}
+	width := max(1, (m.dataWidth()-len(gap)*(columns-1))/columns)
+	compact := m.bodyHeight() < 24
+	numberHeight := 5
+	if compact {
+		numberHeight = 3
+	}
+
+	var rows, cards []string
+	incomplete := false
+	for i, metric := range metrics {
+		label := metric.label
+		if metric.kind != "" && m.failed[metric.kind] {
+			label += " *"
+			incomplete = true
+		}
+		color := colors[(i+1)%len(colors)]
+		card := statistic(metric.count, label, width, color, compact)
+		if metric.kind != "" && !m.loaded[metric.kind] {
+			card = strings.Repeat("\n", numberHeight-1) + muted.Render("Loading…") + "\n" + muted.Render(ansi.Wrap(label, width, " "))
+		}
+		if len(cards) > 0 {
+			cards = append(cards, gap)
+		}
+		cards = append(cards, lipgloss.NewStyle().Width(width).Render(card))
+		if (i+1)%columns == 0 || i == len(metrics)-1 {
+			rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, cards...))
+			cards = cards[:0]
+		}
+	}
+
+	hint := "Enter to explore all the details."
+	if incomplete {
+		hint += "  * Incomplete"
+	}
+	body := strings.Join(rows, "\n\n")
+	if m.bodyHeight() >= lipgloss.Height(body)+4 {
+		body += "\n\nThanks for showing up. See you in the next commit."
+	}
+	return body + "\n" + muted.Render(hint)
 }
 
 func (m Model) withKindMetric(content pageContent, kind string, count int, label string) pageContent {

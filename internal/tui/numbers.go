@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // The decimal point is punctuation: 10.0K has four digits/unit letters.
@@ -37,11 +38,32 @@ func compactCount(count int) string {
 
 func (m Model) metricView(text string, width int) string {
 	large := display(text)
-	if width < lipgloss.Width(large) || m.height < 24 {
+	if width < lipgloss.Width(large) || m.height < minimumHeight {
 		return ink(m.color()).Bold(true).Render(text)
 	}
-	if !m.wide() && m.height < 30 {
+	if !m.wide() && m.height < fullDisplayHeight {
 		large = strings.Join(compactRows(strings.Split(large, "\n")), "\n")
 	}
 	return ink(m.color()).Render(large)
+}
+
+func statistic(count int, label string, width int, color string, compact bool) string {
+	text := compactCount(count)
+	large := display(text)
+	if lipgloss.Width(large) > width {
+		large = displayWithSpacing(text, "")
+	}
+	if compact {
+		large = strings.Join(compactRows(strings.Split(large, "\n")), "\n")
+	}
+	if lipgloss.Width(large) > width {
+		large = text
+	}
+	if text != strconv.Itoa(count) {
+		fullLabel := fmt.Sprintf("%d %s", count, label)
+		if lipgloss.Width(fullLabel) <= width {
+			label = fullLabel
+		}
+	}
+	return ink(color).Bold(true).Render(large) + "\n" + muted.Render(ansi.Wrap(label, max(1, width), " "))
 }

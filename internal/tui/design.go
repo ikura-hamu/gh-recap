@@ -3,14 +3,24 @@ package tui
 import "charm.land/lipgloss/v2"
 
 const (
-	minimumWidth      = 116
-	minimumHeight     = 24
 	backgroundColor   = "#191425"
 	foregroundColor   = "#EEE7F5"
 	horizontalPadding = 4
+	verticalPadding   = 1
 	sidebarWidth      = 43
-	// Reserve rows for the header, footer, and their surrounding spacing.
-	reservedRows = 10
+	columnGap         = 3 // divider and space to its right
+	headingGap        = "\n\n"
+	metricPadding     = "\n"
+	scrollHintRows    = 1
+	// One header, one blank row, and three footer rows.
+	reservedRows = 2*verticalPadding + 2 + 3
+	// The activity grid must fit on one line, even in the stacked layout.
+	minimumWidth = calendarLabelWidth + calendarWeeks + 2*horizontalPadding
+	wideWidth    = minimumWidth + sidebarWidth + columnGap
+	// Keep enough scrollable rows to show an entire compact number at once.
+	stackedBodyExtraRows = 2 + 2*len(metricPadding) + len(headingGap) + compactDisplayHeight + scrollHintRows
+	minimumHeight        = reservedRows + 2*compactDisplayHeight + stackedBodyExtraRows
+	fullDisplayHeight    = reservedRows + 2*displayHeight + stackedBodyExtraRows
 )
 
 var colors = []string{
@@ -31,7 +41,7 @@ func ink(color string) lipgloss.Style {
 func (m Model) color() string { return colors[m.page%len(colors)] }
 
 func (m Model) wide() bool {
-	return !m.tooSmall() && !m.showDetails
+	return m.width >= wideWidth && !m.showDetails
 }
 
 func (m Model) tooSmall() bool { return m.width < minimumWidth || m.height < minimumHeight }
@@ -43,7 +53,7 @@ func (m Model) bodyHeight() int { return max(1, m.height-reservedRows) }
 func (m Model) dataWidth() int {
 	width := m.contentWidth()
 	if m.wide() {
-		return width - sidebarWidth - 3
+		return width - sidebarWidth - columnGap
 	}
 	return width
 }

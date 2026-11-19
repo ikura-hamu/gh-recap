@@ -6,7 +6,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-var glyphs = map[rune][5]string{
+const (
+	displayHeight        = 5
+	compactDisplayHeight = (displayHeight + 1) / 2
+)
+
+var glyphs = map[rune][displayHeight]string{
 	'0': {"███", "█ █", "█ █", "█ █", "███"},
 	'1': {" █ ", "██ ", " █ ", " █ ", "███"},
 	'2': {"███", "  █", "███", "█  ", "███"},
@@ -50,11 +55,18 @@ var glyphs = map[rune][5]string{
 
 // A 3×5 display face stays readable without requiring terminal font support.
 func display(text string) string {
-	rows := make([]string, 5)
-	for _, letter := range text {
+	return displayWithSpacing(text, " ")
+}
+
+func displayWithSpacing(text, spacing string) string {
+	rows := make([]string, displayHeight)
+	for index, letter := range text {
 		glyph := glyphs[letter]
 		for i := range rows {
-			rows[i] += glyph[i] + " "
+			if index > 0 {
+				rows[i] += spacing
+			}
+			rows[i] += glyph[i]
 		}
 	}
 	for i := range rows {
@@ -69,11 +81,11 @@ func (m Model) banner(width int) string {
 		return ink(m.color()).Bold(true).Render("THE LINER NOTES")
 	}
 	large := display(name)
-	if width < lipgloss.Width(large) || m.height < 24 {
+	if width < lipgloss.Width(large) || m.height < minimumHeight {
 		return ink(m.color()).Bold(true).Render(name)
 	}
 	rows := strings.Split(large, "\n")
-	if !m.wide() && m.height < 30 {
+	if !m.wide() && m.height < fullDisplayHeight {
 		rows = compactRows(rows)
 	}
 	for i, row := range rows {

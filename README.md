@@ -1,12 +1,12 @@
 # gh-recap
 
-Your GitHub year, replayed in your terminal. A Go / Bubble Tea v2 GitHub CLI extension with eleven colorful highlights, autoplay, and a browsable breakdown. Large terminal titles, multicolor charts, and a two-column layout on terminals at least 116 columns wide make room for the story and the numbers.
+Your GitHub year, replayed in your terminal. A Go / Bubble Tea v2 GitHub CLI extension with eleven colorful highlights, autoplay, and a browsable breakdown. Large terminal titles, multicolor charts, and a two-column layout on wider terminals make room for the story and the numbers.
 
 ## Run
 
 Requires Go 1.25.8+ and [GitHub CLI](https://cli.github.com/).
 
-The terminal must be at least 116 columns × 24 rows. Smaller windows show a size warning and suspend playback until resized; quitting remains available.
+The layout switches to stacked sections in narrower terminals. The minimum size is calculated from the activity grid and the compact heading and scroll area. Windows below that size show the required dimensions and suspend playback until resized. Quitting remains available.
 
 ```sh
 gh auth login

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -76,9 +77,21 @@ func TestWaitingForData(t *testing.T) {
 	}
 }
 
+func TestTopRanksLeadEachRow(t *testing.T) {
+	m := readyModel()
+	m.page = pageRepositories
+	m.width, m.height = wideWidth, minimumHeight
+	_, view := m.scrollViewport()
+	for _, rank := range []string{"#1 ", "#2 ", "#3 "} {
+		if !strings.Contains("\n"+ansi.Strip(view.View()), "\n"+rank) {
+			t.Errorf("rank %s is not at the start of a visible row", strings.TrimSpace(rank))
+		}
+	}
+}
+
 func TestAllPagesAndSizes(t *testing.T) {
 	m := readyModel()
-	for _, size := range [][2]int{{160, 40}, {120, 28}, {116, 24}, {100, 35}, {80, 28}, {40, 15}, {10, 5}} {
+	for _, size := range [][2]int{{minimumWidth, minimumHeight}, {wideWidth, minimumHeight}, {160, 40}, {120, 28}, {116, 24}, {100, 35}, {80, 28}, {40, 15}, {10, 5}} {
 		m.width = size[0]
 		m.height = size[1]
 		for p := 0; p < pageCount; p++ {
@@ -90,6 +103,14 @@ func TestAllPagesAndSizes(t *testing.T) {
 			view := m.View()
 			if lipgloss.Width(view.Content) > m.width || lipgloss.Height(view.Content) > m.height {
 				t.Fatalf("page %d exceeds terminal %dx%d: %dx%d", p, m.width, m.height, lipgloss.Width(view.Content), lipgloss.Height(view.Content))
+			}
+			if !m.tooSmall() && !strings.Contains(ansi.Strip(view.Content), "sources ·") {
+				t.Errorf("page %d hides the footer at %dx%d", p, m.width, m.height)
+			}
+			if m.width == minimumWidth && m.height == minimumHeight {
+				if m.wide() || m.scrollLayout().ViewportHeight < compactDisplayHeight {
+					t.Errorf("page %d lacks a usable stacked viewport at minimum size", p)
+				}
 			}
 		}
 	}
@@ -195,18 +216,18 @@ func TestCoauthorsPageAndCollection(t *testing.T) {
 }
 
 func TestMinimumTerminalSize(t *testing.T) {
-	for _, size := range [][2]int{{115, 24}, {116, 23}, {80, 24}, {10, 5}, {116, 24}, {120, 28}} {
+	for _, size := range [][2]int{{minimumWidth - 1, minimumHeight}, {minimumWidth, minimumHeight - 1}, {minimumWidth, minimumHeight}, {wideWidth - 1, minimumHeight}, {wideWidth, minimumHeight}, {10, 5}} {
 		m := readyModel()
 		m.width, m.height = size[0], size[1]
 		for _, details := range []bool{false, true} {
 			m.showDetails = details
 			view := m.View()
 			text := ansi.Strip(view.Content)
-			wantWarning := size[0] < 116 || size[1] < 24
+			wantWarning := size[0] < minimumWidth || size[1] < minimumHeight
 			if strings.Contains(text, "Terminal too small") != wantWarning && size[0] >= 40 {
 				t.Fatalf("wrong screen at %dx%d, details=%v", m.width, m.height, details)
 			}
-			if wantWarning && size[0] >= 40 && !strings.Contains(text, "116 columns × 24 rows") {
+			if wantWarning && size[0] >= 40 && !strings.Contains(text, fmt.Sprintf("%d columns × %d rows", minimumWidth, minimumHeight)) {
 				t.Fatal("warning should explain the minimum dimensions")
 			}
 			if lipgloss.Width(view.Content) > m.width || lipgloss.Height(view.Content) > m.height {
@@ -220,7 +241,7 @@ func TestSmallTerminalSuspendsPlayback(t *testing.T) {
 	m := readyModel()
 	now := m.lastTick
 	m.elapsed = 2 * time.Second
-	m = update(m, tea.WindowSizeMsg{Width: 115, Height: 24})
+	m = update(m, tea.WindowSizeMsg{Width: minimumWidth - 1, Height: minimumHeight})
 	m = update(m, tickMsg(now.Add(time.Minute)))
 	if m.page != pageOverview || m.elapsed != 2*time.Second {
 		t.Fatal("hidden recap should not advance")
@@ -234,7 +255,7 @@ func TestSmallTerminalSuspendsPlayback(t *testing.T) {
 	if quit == nil {
 		t.Fatal("quit should still work on a small terminal")
 	}
-	m = update(m, tea.WindowSizeMsg{Width: 116, Height: 24})
+	m = update(m, tea.WindowSizeMsg{Width: minimumWidth, Height: minimumHeight})
 	if strings.Contains(ansi.Strip(m.View().Content), "Terminal too small") {
 		t.Fatal("resizing to the minimum should restore the recap")
 	}
