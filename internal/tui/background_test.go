@@ -124,3 +124,23 @@ func TestBackgroundWithoutAnimation(t *testing.T) {
 		t.Fatal("background color should remain with animation disabled")
 	}
 }
+
+func TestEachPageHasDistinctBackgroundMotion(t *testing.T) {
+	m := readyModel()
+	m.width, m.height = minimumWidth, minimumHeight
+	seen := make(map[string]string)
+	for page, definition := range pageDefinitions {
+		m.page = page
+		m.sparkleFrame = 4
+		first := ansi.Strip(m.sparkleBackground(""))
+		m.sparkleFrame = 13
+		second := ansi.Strip(m.sparkleBackground(""))
+		if strings.TrimSpace(first) == "" || first == second {
+			t.Errorf("%s has no visible motion", definition.Banner)
+		}
+		if previous, exists := seen[first]; exists {
+			t.Errorf("%s and %s share a background pattern", previous, definition.Banner)
+		}
+		seen[first] = definition.Banner
+	}
+}
