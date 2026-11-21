@@ -46,7 +46,6 @@ func ranking(entries []recap.Entry, width int) string {
 			labelWidth := max(8, width-lipgloss.Width(badge)-lipgloss.Width(number)-4)
 			label := ink(color).Bold(true).Render(ansi.Wrap(entry.Name, labelWidth, " /"))
 			label += "\n" + coloredBar(entry.Count, maximum, labelWidth, color)
-			label += "\n" + ink(color).Bold(true).Render(fmt.Sprint(entry.Count))
 			fmt.Fprintln(&body, lipgloss.JoinHorizontal(lipgloss.Top, badge, " ", number, "   ", label))
 			body.WriteByte('\n')
 			continue
