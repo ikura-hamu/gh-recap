@@ -78,7 +78,7 @@ func displayWithSpacing(text, spacing string) string {
 func (m Model) banner(width int) string {
 	name := m.displayName()
 	if m.showDetails {
-		return ink(m.color()).Bold(true).Render("THE LINER NOTES")
+		return ink(m.color()).Bold(true).Render(linerNotes)
 	}
 	large := display(name)
 	if width < lipgloss.Width(large) || m.height < minimumHeight {

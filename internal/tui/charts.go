@@ -32,7 +32,7 @@ func progressBar(fraction float64, width int, color string) string {
 
 func ranking(entries []recap.Entry, width int) string {
 	if len(entries) == 0 {
-		return "No recorded activity in this scope."
+		return emptyRanking
 	}
 	maximum := entries[0].Count
 	var body strings.Builder
@@ -72,10 +72,10 @@ func monthlyActivity(stats recap.Stats, width int) string {
 func streakActivity(stats recap.Stats, width int) string {
 	peak := stats.PeakDay
 	if peak == "" {
-		peak = "No recorded activity yet"
+		peak = noPeak
 	}
 	var body strings.Builder
-	fmt.Fprintf(&body, "%s consecutive active days\n\nPeak day: %s · %d contributions\n\n",
+	fmt.Fprintf(&body, streakBody,
 		mint.Render(fmt.Sprint(stats.Streak)), peak, stats.PeakCount)
 	maximum := slices.Max(stats.Weekdays[:])
 	for weekday, count := range stats.Weekdays {
@@ -100,7 +100,7 @@ func calendar(stats recap.Stats, year, width int) string {
 		cellWidth = 2
 	}
 	var body strings.Builder
-	fmt.Fprint(&body, "     YOUR CONTRIBUTION CONSTELLATION\n\n")
+	body.WriteString("     " + calendarHeading + "\n\n")
 	// Columns are weeks, aligned to Sunday. 54 columns also cover leap years
 	// that start on Saturday; dates outside the selected year stay blank.
 	for weekday := 0; weekday < 7; weekday++ {
@@ -116,7 +116,7 @@ func calendar(stats recap.Stats, year, width int) string {
 		}
 		body.WriteByte('\n')
 	}
-	fmt.Fprintf(&body, "\n%d active days. Each one counts.\nSelected-scope contribution records; not the profile graph.", stats.ActiveDays)
+	fmt.Fprintf(&body, calendarNotes, stats.ActiveDays)
 	return body.String()
 }
 

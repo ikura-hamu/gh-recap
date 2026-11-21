@@ -139,7 +139,7 @@ func (m Model) View() tea.View {
 
 func (m Model) sizeWarning() string {
 	width, height := max(1, m.width), max(1, m.height)
-	message := fmt.Sprintf("Terminal too small to display GH RECAP.\n\nMinimum: %d columns × %d rows\nCurrent: %d columns × %d rows\n\nResize your terminal to continue.\nq / Ctrl+C to quit", minimumWidth, minimumHeight, m.width, m.height)
+	message := fmt.Sprintf(terminalSize, minimumWidth, minimumHeight, m.width, m.height)
 	message = lipgloss.NewStyle().MaxWidth(width).MaxHeight(height).
 		Render(ansi.Wrap(message, width, " "))
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, message)
@@ -170,12 +170,12 @@ func (m Model) screenView(content string) tea.View {
 }
 
 func (m Model) headerView(width int) string {
-	scope := "PUBLIC ONLY"
+	scope := publicOnly
 	if m.options.IncludePrivate {
-		scope = "PUBLIC + PRIVATE"
+		scope = includePrivate
 	}
 	if m.options.Demo {
-		scope = "DEMO · " + scope
+		scope = demoPrefix + scope
 	}
 	badge := lipgloss.NewStyle().
 		Background(lipgloss.Color(m.color())).
@@ -190,8 +190,8 @@ func (m Model) headerView(width int) string {
 
 func (m Model) bodyView() string {
 	if m.identityError != nil {
-		return accent.Render("Couldn't load your GitHub identity.") + "\n\n" +
-			m.identityError.Error() + "\n\nRun gh auth login, then try again.\nOr explore with: gh recap --demo"
+		return accent.Render(identityError) + "\n\n" +
+			m.identityError.Error() + identityHelp
 	}
 	if m.login == "" {
 		return m.banner(m.contentWidth()) + "\n\n" + m.collectionView(m.contentWidth())
@@ -202,7 +202,7 @@ func (m Model) bodyView() string {
 	if view.TotalLineCount() > view.Height() {
 		first := view.YOffset() + 1
 		last := min(view.TotalLineCount(), view.YOffset()+view.Height())
-		body += muted.Render(fmt.Sprintf("\n↑/↓ scroll · %d–%d / %d", first, last, view.TotalLineCount()))
+		body += muted.Render(fmt.Sprintf(scrollHint, first, last, view.TotalLineCount()))
 	}
 	if !m.wide() {
 		return heading + headingGap + body
@@ -237,48 +237,48 @@ func (m Model) collectionView(width int) string {
 			rows[y] += cell
 		}
 	}
-	message := "Collecting your GitHub activity…"
+	message := collectingActivity
 	if m.login == "" {
-		message = "Connecting to GitHub…"
+		message = connecting
 	}
-	label := accent.Render("COLLECTING") + "\n" + message +
-		fmt.Sprintf("\n%d / %d sources collected", len(m.loaded), len(recap.Sources))
+	label := accent.Render(collectingHeading) + "\n" + message +
+		fmt.Sprintf(sourcesCollected, len(m.loaded), len(recap.Sources))
 	panel := lipgloss.JoinHorizontal(lipgloss.Center, strings.Join(rows[:], "\n"), "   ", label)
 	bar := progressBar(float64(len(m.loaded))/float64(len(recap.Sources)), min(40, max(1, width-8)), m.color())
 	return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(panel + "\n\n" + bar)
 }
 
 func (m Model) statusView() string {
-	state := "PLAYING"
+	state := playing
 	switch {
 	case !m.ready():
-		state = "COLLECTING"
+		state = collectingHeading
 	case m.playbackFinished:
-		state = "FINISHED"
+		state = finished
 	case m.showDetails:
-		state = "DETAILS"
+		state = details
 	}
 	if m.paused {
-		if state == "PLAYING" {
-			state = "PAUSED"
+		if state == playing {
+			state = paused
 		} else {
-			state = "PAUSED · " + state
+			state = pausedPrefix + state
 		}
 	}
 	if len(m.failed) > 0 || len(m.warnings) > 0 {
-		state += " · INCOMPLETE"
+		state += statusIncomplete
 	}
 	if m.identityError != nil {
-		state = "CONNECTION FAILED"
+		state = connectionFailed
 	}
 
 	indicator := "●"
 	if !m.options.NoAnimation && len(m.loaded) < len(recap.Sources) && m.identityError == nil {
 		indicator = m.loading.View()
 	}
-	status := fmt.Sprintf("%s %s · %g× · %d/%d sources · %02d/%d", indicator, state, m.speed, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
+	status := fmt.Sprintf(statusFormat, indicator, state, m.speed, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
 	if len(m.warnings) > 0 && m.identityError == nil {
-		status += " · Enter for warnings"
+		status += warningsHint
 	}
 	return status
 }

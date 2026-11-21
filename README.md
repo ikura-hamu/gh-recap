@@ -25,6 +25,8 @@ gh recap --demo --no-animation      # no decorative animation; autoplay still wo
 
 During development, run `go run . --demo`.
 
+Recap text is maintained in [internal/tui/copy.go](internal/tui/copy.go).
+
 The default year is the current local year. API date boundaries use UTC, January 1 through December 31 (or now for the current year). Future years and years before 2008 are rejected.
 
 ## Controls

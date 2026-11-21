@@ -19,10 +19,10 @@ type pageContent struct {
 
 func (m Model) number(kind string, count int) string {
 	if !m.loaded[kind] {
-		return "Loading…"
+		return loading
 	}
 	if m.failed[kind] {
-		return fmt.Sprintf("%d recorded · incomplete", count)
+		return fmt.Sprintf(partialCount, count)
 	}
 	return fmt.Sprint(count)
 }
@@ -37,77 +37,77 @@ func (m Model) content() pageContent {
 	switch m.page {
 	case pageOverview:
 		content := pageContent{
-			Eyebrow: "YOUR YEAR, REPLAYED.",
-			Title:   "recorded contributions",
+			Eyebrow: overviewKicker,
+			Title:   contributions,
 			Metric:  compactCount(stats.Total),
 			Body:    m.overviewBody(stats),
 		}
 		if !m.ready() {
 			content.Metric = ""
-			content.Title = "Collecting your year"
+			content.Title = collectingYear
 		}
 		return content
 	case pageCalendar:
 		return pageContent{
-			Eyebrow: "LITTLE DAYS. BIG YEAR.", Title: "Your activity map",
+			Eyebrow: calendarKicker, Title: calendarTitle,
 			Body: calendar(stats, m.options.Year, m.dataWidth()),
 		}
 	case pageMonths:
 		return pageContent{
-			Eyebrow: "YOU FOUND YOUR RHYTHM.", Title: "Month by month",
+			Eyebrow: monthsKicker, Title: monthsTitle,
 			Body: monthlyActivity(stats, chartWidth),
 		}
 	case pageStreak:
 		return pageContent{
-			Eyebrow: "ONE DAY BECAME A STREAK.", Title: "consecutive active days",
+			Eyebrow: streakKicker, Title: streakTitle,
 			Metric: compactCount(stats.Streak),
 			Body:   streakActivity(stats, chartWidth),
 		}
 	case pageCommits:
 		return m.withKindMetric(pageContent{
-			Eyebrow: "BUILT, ONE COMMIT AT A TIME.",
-			Title:   m.number(recap.KindCommits, stats.Kinds[recap.KindCommits]) + " commits",
-			Body:    m.kindRanking(recap.KindCommits, chartWidth) + "\nGitHub contribution commits, not every branch or push.",
-		}, recap.KindCommits, stats.Kinds[recap.KindCommits], "commits")
+			Eyebrow: commitsKicker,
+			Title:   m.number(recap.KindCommits, stats.Kinds[recap.KindCommits]) + " " + commits,
+			Body:    m.kindRanking(recap.KindCommits, chartWidth) + commitsNotes,
+		}, recap.KindCommits, stats.Kinds[recap.KindCommits], commits)
 	case pageCoauthors:
 		content := pageContent{
-			Eyebrow: "GOOD WORK HAS GOOD COMPANY.", Title: "Co-authors",
+			Eyebrow: coauthorsKicker, Title: coauthorsTitle,
 			Body: m.coauthorRanking(chartWidth),
 		}
 		if m.loaded[recap.KindCoauthors] {
 			content.Metric = compactCount(len(m.coauthors))
-			content.Title = "co-authors"
+			content.Title = coauthors
 			if m.failed[recap.KindCoauthors] {
-				content.Title += " · incomplete"
+				content.Title += incomplete
 			}
 		}
 		return content
 	case pagePullRequests:
 		return m.withKindMetric(pageContent{
-			Eyebrow: "IDEAS BECAME PULL REQUESTS.",
-			Title:   m.number(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests]) + " pull requests",
-			Body:    m.kindRanking(recap.KindPullRequests, chartWidth) + "\nPRs opened during this year, including first and popular PRs.",
-		}, recap.KindPullRequests, stats.Kinds[recap.KindPullRequests], "pull requests")
+			Eyebrow: prsKicker,
+			Title:   m.number(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests]) + " " + prs,
+			Body:    m.kindRanking(recap.KindPullRequests, chartWidth) + prsNotes,
+		}, recap.KindPullRequests, stats.Kinds[recap.KindPullRequests], prs)
 	case pageReviews:
 		return m.withKindMetric(pageContent{
-			Eyebrow: "YOU MADE OTHER WORK BETTER.",
-			Title:   m.number(recap.KindReviews, stats.Kinds[recap.KindReviews]) + " review contributions",
-			Body:    m.kindRanking(recap.KindReviews, chartWidth) + "\nLatest review contribution per reviewed PR during this year.",
-		}, recap.KindReviews, stats.Kinds[recap.KindReviews], "review contributions")
+			Eyebrow: reviewsKicker,
+			Title:   m.number(recap.KindReviews, stats.Kinds[recap.KindReviews]) + " " + reviewContributions,
+			Body:    m.kindRanking(recap.KindReviews, chartWidth) + reviewsNotes,
+		}, recap.KindReviews, stats.Kinds[recap.KindReviews], reviewContributions)
 	case pageRepositories:
 		return pageContent{
-			Eyebrow: "YOUR CORNER OF GITHUB.", Title: "active repositories",
+			Eyebrow: reposKicker, Title: reposTitle,
 			Metric: compactCount(len(stats.Repos)),
 			Body:   ranking(recap.Ranked(stats.Repos), chartWidth),
 		}
 	case pageLanguages:
 		return pageContent{
-			Eyebrow: "A YEAR WITH MANY DIALECTS.", Title: "Languages in your active repositories",
-			Body: ranking(recap.Ranked(stats.Languages), chartWidth) + "\nCurrent primary language per repository. Counts repositories, not code.",
+			Eyebrow: languagesKicker, Title: languagesTitle,
+			Body: ranking(recap.Ranked(stats.Languages), chartWidth) + languagesNotes,
 		}
 	default:
 		return pageContent{
-			Eyebrow: "THAT WAS YOUR YEAR.", Title: fmt.Sprintf("%d · @%s", m.options.Year, m.login),
+			Eyebrow: summaryKicker, Title: fmt.Sprintf("%d · @%s", m.options.Year, m.login),
 			Body: m.encoreBody(stats),
 		}
 	}
@@ -119,12 +119,12 @@ func (m Model) overviewBody(stats recap.Stats) string {
 	}
 	width := m.dataWidth()
 	compact := m.bodyHeight() < 20
-	total := statistic(stats.Total, "recorded contributions", width, colors[0], compact)
+	total := statistic(stats.Total, contributions, width, colors[0], compact)
 	half := (width - 4) / 2
 	activity := lipgloss.JoinHorizontal(lipgloss.Top,
-		lipgloss.NewStyle().Width(half).Render(statistic(stats.ActiveDays, "active days", half, colors[1], compact)),
-		"    ", statistic(len(stats.Repos), "repositories", half, colors[4], compact))
-	return fmt.Sprintf("@%s, you showed up.\n\n%s\n\n%s\n\nYour work has a story. Let's rewind.", m.login, total, activity)
+		lipgloss.NewStyle().Width(half).Render(statistic(stats.ActiveDays, activeDays, half, colors[1], compact)),
+		"    ", statistic(len(stats.Repos), repositories, half, colors[4], compact))
+	return fmt.Sprintf(overviewBody, m.login, total, activity)
 }
 
 func (m Model) encoreBody(stats recap.Stats) string {
@@ -132,13 +132,13 @@ func (m Model) encoreBody(stats recap.Stats) string {
 		kind, label string
 		count       int
 	}{
-		{recap.KindCommits, "commits", stats.Kinds[recap.KindCommits]},
-		{recap.KindPullRequests, "pull requests", stats.Kinds[recap.KindPullRequests]},
-		{recap.KindReviews, "reviews", stats.Kinds[recap.KindReviews]},
-		{recap.KindIssues, "issues", stats.Kinds[recap.KindIssues]},
-		{recap.KindRepositories, "new repositories", stats.Kinds[recap.KindRepositories]},
-		{"", "active days", stats.ActiveDays},
-		{"", "longest streak", stats.Streak},
+		{recap.KindCommits, commits, stats.Kinds[recap.KindCommits]},
+		{recap.KindPullRequests, prs, stats.Kinds[recap.KindPullRequests]},
+		{recap.KindReviews, reviews, stats.Kinds[recap.KindReviews]},
+		{recap.KindIssues, issues, stats.Kinds[recap.KindIssues]},
+		{recap.KindRepositories, newRepos, stats.Kinds[recap.KindRepositories]},
+		{"", activeDays, stats.ActiveDays},
+		{"", longestStreak, stats.Streak},
 	}
 	columns := 3
 	if m.bodyHeight() < 16 {
@@ -146,7 +146,7 @@ func (m Model) encoreBody(stats recap.Stats) string {
 		columns = 4
 	}
 	gap := "  "
-	if columns == 4 && m.dataWidth() < columns*len("longest streak")+len(gap)*(columns-1) {
+	if columns == 4 && m.dataWidth() < columns*lipgloss.Width(longestStreak)+len(gap)*(columns-1) {
 		gap = " "
 	}
 	width := max(1, (m.dataWidth()-len(gap)*(columns-1))/columns)
@@ -167,7 +167,7 @@ func (m Model) encoreBody(stats recap.Stats) string {
 		color := colors[(i+1)%len(colors)]
 		card := statistic(metric.count, label, width, color, compact)
 		if metric.kind != "" && !m.loaded[metric.kind] {
-			card = strings.Repeat("\n", numberHeight-1) + muted.Render("Loading…") + "\n" + muted.Render(ansi.Wrap(label, width, " "))
+			card = strings.Repeat("\n", numberHeight-1) + muted.Render(loading) + "\n" + muted.Render(ansi.Wrap(label, width, " "))
 		}
 		if len(cards) > 0 {
 			cards = append(cards, gap)
@@ -179,13 +179,13 @@ func (m Model) encoreBody(stats recap.Stats) string {
 		}
 	}
 
-	hint := "Enter to explore all the details."
+	hint := explore
 	if incomplete {
-		hint += "  * Incomplete"
+		hint += incompleteMark
 	}
 	body := strings.Join(rows, "\n\n")
 	if m.bodyHeight() >= lipgloss.Height(body)+4 {
-		body += "\n\nThanks for showing up. See you in the next commit."
+		body += farewell
 	}
 	return body + "\n" + muted.Render(hint)
 }
@@ -195,31 +195,24 @@ func (m Model) withKindMetric(content pageContent, kind string, count int, label
 		content.Metric = compactCount(count)
 		content.Title = label
 		if m.failed[kind] {
-			content.Title += " recorded · incomplete"
+			content.Title += recordedIncomplete
 		}
 	}
 	return content
 }
 
-const metricNotes = `Counts follow GitHub contribution rules; they are not all Git events.
-Private activity requires access through your gh authentication.
-Languages describe current primary languages of active repositories,
-not code you wrote this year. Reviews count the latest review per PR, not comments.
-Repository rankings combine the five recorded activity types.
-Calendar uses dates returned by GitHub; the selected year uses UTC bounds.`
-
 func (m Model) detailsContent(stats recap.Stats, chartWidth int) pageContent {
 	var body strings.Builder
 	heading := ink(m.color()).Bold(true)
 	fmt.Fprintln(&body, metricNotes)
-	fmt.Fprintln(&body, "\n"+heading.Render("ACTIVITY"))
+	fmt.Fprintln(&body, "\n"+heading.Render(activityHeading))
 	for _, kind := range recap.Kinds {
 		fmt.Fprintf(&body, "%-14s %s\n", kind, m.number(kind, stats.Kinds[kind]))
 	}
-	fmt.Fprintln(&body, "\n"+heading.Render("ACTIVE REPOSITORIES")+"\n"+ranking(recap.Ranked(stats.Repos), chartWidth))
-	fmt.Fprintln(&body, "\n"+heading.Render("LANGUAGES")+" · repository count\n"+ranking(recap.Ranked(stats.Languages), chartWidth))
-	fmt.Fprintln(&body, "\n"+heading.Render("CO-AUTHORS")+" · shared commits\n"+m.coauthorRanking(chartWidth))
-	fmt.Fprintln(&body, "\n"+heading.Render("DAILY ACTIVITY"))
+	fmt.Fprintln(&body, "\n"+heading.Render(reposHeading)+"\n"+ranking(recap.Ranked(stats.Repos), chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render(languagesHeading)+languageCount+ranking(recap.Ranked(stats.Languages), chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render(coauthorsHeading)+sharedCommits+m.coauthorRanking(chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render(dailyHeading))
 	start := time.Date(m.options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for date := start; date.Year() == m.options.Year; date = date.AddDate(0, 0, 1) {
 		day := date.Format(time.DateOnly)
@@ -228,25 +221,25 @@ func (m Model) detailsContent(stats recap.Stats, chartWidth int) pageContent {
 		}
 	}
 	if len(m.warnings) > 0 {
-		fmt.Fprintln(&body, "\n"+heading.Render("COLLECTION WARNINGS")+"\n"+strings.Join(m.warnings, "\n"))
+		fmt.Fprintln(&body, "\n"+heading.Render(warningsHeading)+"\n"+strings.Join(m.warnings, "\n"))
 	}
-	return pageContent{Title: "Explore your year", Body: body.String()}
+	return pageContent{Title: detailsTitle, Body: body.String()}
 }
 
 func (m Model) coauthorRanking(width int) string {
 	if !m.loaded[recap.KindCoauthors] {
-		return "Loading co-authors…"
+		return loadingCoauthors
 	}
 	var body string
 	if len(m.coauthors) == 0 {
-		body = "No co-authored commits found in the scanned history."
+		body = noCoauthors
 	} else {
 		body = ranking(recap.Ranked(m.coauthors), width)
 	}
 	if m.failed[recap.KindCoauthors] {
-		body += "\nIncomplete results. Enter for collection warnings.\n"
+		body += coauthorsIncomplete
 	}
-	return body + "\nShared commits per author, excluding you.\nDefault branches of contribution repositories; commit dates in the selected year.\nEach commit counts once per co-author, including unlinked email identities."
+	return body + coauthorsNotes
 }
 
 func (m Model) kindRanking(kind string, width int) string {
