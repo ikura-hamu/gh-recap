@@ -210,15 +210,16 @@ Calendar uses dates returned by GitHub; the selected year uses UTC bounds.`
 
 func (m Model) detailsContent(stats recap.Stats, chartWidth int) pageContent {
 	var body strings.Builder
+	heading := ink(m.color()).Bold(true)
 	fmt.Fprintln(&body, metricNotes)
-	fmt.Fprintln(&body, "\nACTIVITY")
+	fmt.Fprintln(&body, "\n"+heading.Render("ACTIVITY"))
 	for _, kind := range recap.Kinds {
 		fmt.Fprintf(&body, "%-14s %s\n", kind, m.number(kind, stats.Kinds[kind]))
 	}
-	fmt.Fprintln(&body, "\nACTIVE REPOSITORIES\n"+ranking(recap.Ranked(stats.Repos), chartWidth))
-	fmt.Fprintln(&body, "\nLANGUAGES · repository count\n"+ranking(recap.Ranked(stats.Languages), chartWidth))
-	fmt.Fprintln(&body, "\nCO-AUTHORS · shared commits\n"+m.coauthorRanking(chartWidth))
-	fmt.Fprintln(&body, "\nDAILY ACTIVITY")
+	fmt.Fprintln(&body, "\n"+heading.Render("ACTIVE REPOSITORIES")+"\n"+ranking(recap.Ranked(stats.Repos), chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render("LANGUAGES")+" · repository count\n"+ranking(recap.Ranked(stats.Languages), chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render("CO-AUTHORS")+" · shared commits\n"+m.coauthorRanking(chartWidth))
+	fmt.Fprintln(&body, "\n"+heading.Render("DAILY ACTIVITY"))
 	start := time.Date(m.options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for date := start; date.Year() == m.options.Year; date = date.AddDate(0, 0, 1) {
 		day := date.Format(time.DateOnly)
@@ -227,9 +228,9 @@ func (m Model) detailsContent(stats recap.Stats, chartWidth int) pageContent {
 		}
 	}
 	if len(m.warnings) > 0 {
-		fmt.Fprintln(&body, "\nCOLLECTION WARNINGS\n"+strings.Join(m.warnings, "\n"))
+		fmt.Fprintln(&body, "\n"+heading.Render("COLLECTION WARNINGS")+"\n"+strings.Join(m.warnings, "\n"))
 	}
-	return pageContent{Eyebrow: "THE LINER NOTES", Title: "Explore your year", Body: body.String()}
+	return pageContent{Title: "Explore your year", Body: body.String()}
 }
 
 func (m Model) coauthorRanking(width int) string {

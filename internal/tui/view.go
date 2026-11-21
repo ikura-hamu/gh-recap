@@ -29,10 +29,11 @@ func (m Model) scrollLayout() contentLayout {
 	if m.titleFlashing() {
 		titleStyle = titleStyle.Foreground(lipgloss.Color("#FFF1FA"))
 	}
-	parts := []string{
-		muted.Render(ansi.Wrap(content.Eyebrow, headingWidth, " ")),
-		m.banner(headingWidth),
+	var parts []string
+	if content.Eyebrow != "" {
+		parts = append(parts, muted.Render(ansi.Wrap(content.Eyebrow, headingWidth, " ")))
 	}
+	parts = append(parts, m.banner(headingWidth))
 	if content.Metric != "" {
 		parts = append(parts, metricPadding+m.metricView(content.Metric, headingWidth)+metricPadding)
 	}
