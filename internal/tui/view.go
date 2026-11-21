@@ -69,7 +69,7 @@ type cachedViewport struct {
 }
 
 func (m Model) titleFlashing() bool {
-	return !m.options.NoAnimation && !m.paused && m.transitionFrame < 4
+	return !m.options.NoAnimation && !m.paused && m.titleFrame < 4
 }
 
 func (m Model) viewportKey() viewportKey {
@@ -241,19 +241,20 @@ func (m Model) collectionView(width int) string {
 	positions := [collectionOrbitSize][2]int{{2, 0}, {4, 0}, {4, 1}, {4, 2}, {2, 2}, {0, 2}, {0, 1}, {0, 0}}
 	frame := int(m.sparkleFrame % uint64(len(positions)))
 	var rows [3]string
-	for y := range rows {
-		for x := 0; x < 5; x++ {
-			cell := " "
-			for i, position := range positions {
-				if position == [2]int{x, y} {
-					cell = muted.Render("·")
-					if i == frame || m.options.NoAnimation {
-						cell = accent.Render("●")
-					}
-				}
-			}
-			rows[y] += cell
+	cells := [3][5]string{
+		{" ", " ", " ", " ", " "},
+		{" ", " ", " ", " ", " "},
+		{" ", " ", " ", " ", " "},
+	}
+	for i, position := range positions {
+		cell := muted.Render("·")
+		if i == frame || m.options.NoAnimation {
+			cell = accent.Render("●")
 		}
+		cells[position[1]][position[0]] = cell
+	}
+	for y := range rows {
+		rows[y] = strings.Join(cells[y][:], "")
 	}
 	message := collectingActivity
 	if m.login == "" {

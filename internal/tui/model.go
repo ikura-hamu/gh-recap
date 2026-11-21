@@ -41,7 +41,7 @@ type Model struct {
 	page             int
 	width            int
 	height           int
-	transitionFrame  int
+	titleFrame       int
 	transition       pageTransition
 	sparkleFrame     uint64
 	paused           bool

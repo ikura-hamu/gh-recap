@@ -58,11 +58,7 @@ func (m Model) content() pageContent {
 			Body:   streakActivity(stats, chartWidth),
 		}
 	case pageCommits:
-		return m.withKindMetric(pageContent{
-			Eyebrow: commitsKicker,
-			Title:   m.number(recap.KindCommits, stats.Kinds[recap.KindCommits]) + " " + commits,
-			Body:    m.kindRanking(recap.KindCommits, chartWidth) + commitsNotes,
-		}, recap.KindCommits, stats.Kinds[recap.KindCommits], commits)
+		return m.kindContent(recap.KindCommits, stats.Kinds[recap.KindCommits], chartWidth, commitsKicker, commits, commitsNotes)
 	case pageCoauthors:
 		content := pageContent{
 			Eyebrow: coauthorsKicker, Title: coauthorsTitle,
@@ -77,19 +73,11 @@ func (m Model) content() pageContent {
 		}
 		return content
 	case pagePullRequests:
-		return m.withKindMetric(pageContent{
-			Eyebrow: prsKicker,
-			Title:   m.number(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests]) + " " + prs,
-			Body:    m.kindRanking(recap.KindPullRequests, chartWidth) + prsNotes,
-		}, recap.KindPullRequests, stats.Kinds[recap.KindPullRequests], prs)
+		return m.kindContent(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests], chartWidth, prsKicker, prs, prsNotes)
 	case pagePopularPR:
 		return m.popularPRContent()
 	case pageReviews:
-		return m.withKindMetric(pageContent{
-			Eyebrow: reviewsKicker,
-			Title:   m.number(recap.KindReviews, stats.Kinds[recap.KindReviews]) + " " + reviewContributions,
-			Body:    m.kindRanking(recap.KindReviews, chartWidth) + reviewsNotes,
-		}, recap.KindReviews, stats.Kinds[recap.KindReviews], reviewContributions)
+		return m.kindContent(recap.KindReviews, stats.Kinds[recap.KindReviews], chartWidth, reviewsKicker, reviewContributions, reviewsNotes)
 	case pageRepositories:
 		return pageContent{
 			Eyebrow: reposKicker, Title: reposTitle,
@@ -186,7 +174,12 @@ func (m Model) encoreBody(stats recap.Stats) string {
 	return body + "\n" + muted.Render(hint)
 }
 
-func (m Model) withKindMetric(content pageContent, kind string, count int, label string) pageContent {
+func (m Model) kindContent(kind string, count, width int, eyebrow, label, notes string) pageContent {
+	content := pageContent{
+		Eyebrow: eyebrow,
+		Title:   loading + " " + label,
+		Body:    m.kindRanking(kind, width) + notes,
+	}
 	if m.loaded[kind] {
 		content.Metric = compactCount(count)
 		content.Title = label

@@ -90,7 +90,7 @@ func (m *Model) move(delta int) {
 	m.elapsed = 0
 	m.viewport.GotoTop()
 	m.playbackFinished = false
-	m.transitionFrame = 0
+	m.titleFrame = 0
 }
 
 func (m *Model) advancePlayback(now time.Time) {
@@ -106,5 +106,5 @@ func (m *Model) advancePlayback(now time.Time) {
 		}
 	}
 	m.lastTick = now
-	m.transitionFrame++
+	m.titleFrame++
 }
