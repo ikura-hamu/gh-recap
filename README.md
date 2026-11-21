@@ -29,6 +29,17 @@ Recap text is maintained in [internal/tui/copy.go](internal/tui/copy.go).
 
 The default year is the current local year. API date boundaries use UTC, January 1 through December 31 (or now for the current year). Future years and years before 2008 are rejected.
 
+## Record a video
+
+```sh
+gh recap 2025 --video recap.mp4
+gh recap --demo --video demo.mp4
+```
+
+Video export records the full autoplay sequence as a 1280 × 720 MP4 (16:9). It waits for collection before recording and takes about 72 seconds of playback plus collection and encoding time. A successful recording replaces any existing file at the output path. The usual flags apply, including `--include-private` when you want private activity in the saved video.
+
+The video ends with a six-second credit screen showing how to install `gh recap`. Install [VHS](https://github.com/charmbracelet/vhs#installation) and put `vhs`, `ttyd`, and `ffmpeg` on your `PATH`. The recorder uses Bash.
+
 ## Controls
 
 | Key | Action |
@@ -51,7 +62,7 @@ Highlights slide horizontally when changing pages: the next page enters from the
 
 Overview, contribution calendar, monthly activity, streaks and weekdays, commits, co-authors, pull requests, the most-commented PR in scope, reviews, active repositories, repository languages, and a closing summary. The most-commented PR page shows its opening date, description, up to three conversation comments, and participants. Details include issues, new repositories, all rankings, daily records, and collection warnings.
 
-Five activity sources load concurrently. Once commit contributions load, a sixth source scans co-authors without blocking other highlights. Results appear as each source completes. Failures preserve collected records and are marked incomplete. Nothing is cached or exported.
+Five activity sources load concurrently. Once commit contributions load, a sixth source scans co-authors without blocking other highlights. Results appear as each source completes. Failures preserve collected records and are marked incomplete. Activity is held in memory during a run.
 
 Public-only mode filters every record by its repository's visibility; profile totals that could contain private activity are never substituted. `--include-private` includes only activity accessible to your existing `gh` authentication. GitHub permissions, organization SSO, and contribution eligibility can limit the result.
 

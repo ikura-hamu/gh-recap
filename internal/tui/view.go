@@ -202,6 +202,18 @@ func (m Model) bodyView() string {
 	if m.login == "" {
 		return m.banner(m.contentWidth()) + "\n\n" + m.collectionView(m.contentWidth())
 	}
+	if m.options.Recording && m.playbackFinished {
+		card := strings.Join([]string{
+			accent.Render(display("GH RECAP")),
+			"",
+			muted.Render(videoCredit),
+			"",
+			muted.Render(videoInstallLabel),
+			mint.Bold(true).Render(videoInstallCommand),
+		}, "\n")
+		card = lipgloss.NewStyle().Width(lipgloss.Width(card)).Align(lipgloss.Center).Render(card)
+		return lipgloss.Place(m.contentWidth(), m.bodyHeight(), lipgloss.Center, lipgloss.Center, card)
+	}
 
 	heading, view := m.scrollViewport()
 	body := view.View()

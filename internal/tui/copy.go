@@ -2,6 +2,10 @@ package tui
 
 // Text displayed in the recap screens.
 const (
+	videoCredit         = "Made with gh recap"
+	videoInstallLabel   = "Install with GitHub CLI"
+	videoInstallCommand = "gh extension install ikura-hamu/gh-recap"
+
 	collectingHeading   = "COLLECTING"
 	incomplete          = " · incomplete"
 	recordedIncomplete  = " recorded · incomplete"

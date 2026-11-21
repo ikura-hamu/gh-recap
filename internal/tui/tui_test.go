@@ -68,6 +68,25 @@ func TestPlayback(t *testing.T) {
 	}
 }
 
+func TestVideoCreditsAppearAfterPlayback(t *testing.T) {
+	m := readyModel()
+	m.page = pageSummary
+	m.options.NoAnimation = true
+	m.options.Recording = true
+	if strings.Contains(m.View().Content, videoInstallCommand) {
+		t.Fatal("credits should wait for the final recap page to finish")
+	}
+	m = update(m, tickMsg(m.lastTick.Add(pageDuration)))
+	screen := ansi.Strip(m.View().Content)
+	if !strings.Contains(screen, videoCredit) || !strings.Contains(screen, videoInstallCommand) {
+		t.Fatal("recording should end with the credit and install command")
+	}
+	m.options.Recording = false
+	if strings.Contains(m.View().Content, videoInstallCommand) {
+		t.Fatal("interactive playback should stay on the recap summary")
+	}
+}
+
 func TestOverviewShowsYearBelowBanner(t *testing.T) {
 	m := readyModel()
 	content := m.content()

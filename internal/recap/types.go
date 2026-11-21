@@ -21,6 +21,7 @@ type Options struct {
 	IncludePrivate bool
 	Demo           bool
 	NoAnimation    bool
+	Recording      bool
 }
 
 type Language struct{ Name string }

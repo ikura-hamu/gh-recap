@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ikura-hamu/gh-recap/internal/recap"
@@ -50,6 +51,9 @@ func (m *Model) changeSpeed(factor float64) {
 }
 
 func (m Model) ready() bool {
+	if m.options.Recording {
+		return len(m.loaded) == len(recap.Sources)
+	}
 	source := pageDefinitions[m.page].Source
 	if source != "" {
 		return m.loaded[source]
@@ -60,6 +64,17 @@ func (m Model) ready() bool {
 		}
 	}
 	return true
+}
+
+// RecordingResult verifies that the recorder reached the end of the replay.
+func (m Model) RecordingResult() error {
+	if m.identityError != nil {
+		return fmt.Errorf("couldn't load GitHub identity: %w", m.identityError)
+	}
+	if !m.playbackFinished {
+		return fmt.Errorf("playback did not reach the final page")
+	}
+	return nil
 }
 
 func (m *Model) move(delta int) {

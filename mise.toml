@@ -1,4 +1,6 @@
 [tools]
+ttyd = "latest"
+vhs = "latest"
 watchexec = "latest"
 
 [tasks.dev]
