@@ -14,6 +14,7 @@ const (
 	pageCommits
 	pageCoauthors
 	pagePullRequests
+	pagePopularPR
 	pageReviews
 	pageRepositories
 	pageLanguages
@@ -36,6 +37,7 @@ var pageDefinitions = [pageCount]pageDefinition{
 	pageCommits:      {Banner: "COMMITS", Duration: 8 * time.Second, Source: recap.KindCommits},
 	pageCoauthors:    {Banner: "COAUTHORS", Duration: 12 * time.Second, Source: recap.KindCoauthors},
 	pagePullRequests: {Banner: "PULL REQS", Duration: 8 * time.Second, Source: recap.KindPullRequests},
+	pagePopularPR:    {Banner: "POPULAR PR", Duration: 16 * time.Second, Source: recap.KindPullRequests},
 	pageReviews:      {Banner: "REVIEWS", Duration: 8 * time.Second, Source: recap.KindReviews},
 	pageRepositories: {Banner: "REPOS", Duration: 12 * time.Second},
 	pageLanguages:    {Banner: "LANGUAGES", Duration: 12 * time.Second},

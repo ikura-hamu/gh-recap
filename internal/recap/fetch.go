@@ -57,29 +57,37 @@ func fetchCommits(ctx context.Context, client API, options Options, start, end t
 
 func fetchContributions(ctx context.Context, client API, options Options, kind string, start, end time.Time) Result {
 	result := Result{Kind: kind}
+	var bestPR pullRequestCandidate
 	variables := dateVariables(start, end)
 	// A typed nil generates a nullable String variable for the first page.
 	var cursor *graphql.String
 	for {
 		variables["after"] = cursor
-		page, err := fetchContributionPage(ctx, client, options, &result, variables)
+		page, err := fetchContributionPage(ctx, client, options, &result, variables, &bestPR)
 		if err != nil {
 			result.Err = err
-			return result
+			break
 		}
 		if !page.HasNextPage {
-			return result
+			break
 		}
 		if page.EndCursor == "" || cursor != nil && page.EndCursor == string(*cursor) {
 			result.Err = fmt.Errorf("pagination did not advance")
-			return result
+			break
 		}
 		next := graphql.String(page.EndCursor)
 		cursor = &next
 	}
+	if bestPR.ID != "" {
+		result.PopularPR, result.PopularPRErr = fetchPopularPR(ctx, client, options, bestPR.ID)
+		if result.PopularPRErr != nil {
+			result.Warnings = append(result.Warnings, "Popular PR: "+result.PopularPRErr.Error())
+		}
+	}
+	return result
 }
 
-func fetchContributionPage(ctx context.Context, client API, options Options, result *Result, variables map[string]any) (pageInfo, error) {
+func fetchContributionPage(ctx context.Context, client API, options Options, result *Result, variables map[string]any, bestPR *pullRequestCandidate) (pageInfo, error) {
 	switch result.Kind {
 	case KindPullRequests:
 		var query contributionsQuery[pullRequestCollection]
@@ -88,7 +96,11 @@ func fetchContributionPage(ctx context.Context, client API, options Options, res
 		}
 		connection := query.Viewer.ContributionsCollection.PullRequestContributions
 		for _, node := range connection.Nodes {
-			result.addContribution(options, node.OccurredAt, 1, node.PullRequest.Repository)
+			pr := node.PullRequest
+			if result.addContribution(options, node.OccurredAt, 1, pr.Repository) &&
+				pr.ID != "" && (bestPR.ID == "" || pr.Comments.TotalCount > bestPR.Comments.TotalCount) {
+				*bestPR = pr
+			}
 		}
 		return connection.PageInfo, nil
 	case KindIssues:
@@ -126,12 +138,12 @@ func fetchContributionPage(ctx context.Context, client API, options Options, res
 	}
 }
 
-func (r *Result) addContribution(options Options, occurredAt string, count int, repository Repo) {
+func (r *Result) addContribution(options Options, occurredAt string, count int, repository Repo) bool {
 	if !repository.included(options.IncludePrivate) {
-		return
+		return false
 	}
 	if len(occurredAt) < len(time.DateOnly) || repository.NameWithOwner == "" {
-		return
+		return false
 	}
 	r.Events = append(r.Events, Event{
 		Date:  occurredAt[:len(time.DateOnly)],
@@ -139,4 +151,5 @@ func (r *Result) addContribution(options Options, occurredAt string, count int, 
 		Count: count,
 		Repo:  repository,
 	})
+	return true
 }

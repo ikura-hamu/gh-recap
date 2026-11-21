@@ -66,6 +66,7 @@ func (m Model) backgroundEffect() backgroundEffect {
 		pageCommits:      {"#315647", "#6BA789"},
 		pageCoauthors:    {"#66473F", "#C58C79"},
 		pagePullRequests: {"#3F506F", "#7C9DD4"},
+		pagePopularPR:    {"#684D36", "#EEB36E"},
 		pageReviews:      {"#614466", "#B989BE"},
 		pageRepositories: {"#4F593D", "#A6B46C"},
 		pageLanguages:    {"#574264", "#AD83C3"},
@@ -155,6 +156,10 @@ func (e backgroundEffect) cell(x, y int) (string, string) {
 		}
 		if phase < 6 {
 			return "·", e.dim
+		}
+	case pagePopularPR:
+		if (x+y*3+e.frame)%19 == 0 {
+			return "✧", e.bright
 		}
 	case pageReviews: // A horizontal beam sweeps down and back up.
 		travel := e.height - 1

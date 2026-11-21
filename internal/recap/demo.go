@@ -48,5 +48,22 @@ func Demo(options Options, kind string) Result {
 			Date: date.Format(time.DateOnly), Kind: kind, Count: count, Repo: repository,
 		})
 	}
+	if kind == KindPullRequests && len(result.Events) > 0 {
+		event := result.Events[len(result.Events)/2]
+		result.PopularPR = &PopularPR{
+			Repository:   event.Repo.NameWithOwner,
+			Number:       42,
+			Title:        "Add a scrollable activity timeline",
+			Date:         event.Date,
+			Description:  "Adds a timeline so terminal users can browse a full year of activity by day.",
+			CommentCount: 8,
+			Comments: []PRComment{
+				{Author: "aki", Body: "The timeline now fits on my small terminal."},
+				{Author: "haru", Body: "Could we show the selected date while scrolling?"},
+				{Author: "you", Body: "Added the selected date above the timeline."},
+			},
+			People: []string{"you", "aki", "haru", "ren"},
+		}
+	}
 	return result
 }

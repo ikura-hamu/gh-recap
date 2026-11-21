@@ -88,6 +88,8 @@ func (m Model) content() pageContent {
 			Title:   m.number(recap.KindPullRequests, stats.Kinds[recap.KindPullRequests]) + " " + prs,
 			Body:    m.kindRanking(recap.KindPullRequests, chartWidth) + prsNotes,
 		}, recap.KindPullRequests, stats.Kinds[recap.KindPullRequests], prs)
+	case pagePopularPR:
+		return m.popularPRContent()
 	case pageReviews:
 		return m.withKindMetric(pageContent{
 			Eyebrow: reviewsKicker,

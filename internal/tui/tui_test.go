@@ -68,6 +68,21 @@ func TestPlayback(t *testing.T) {
 	}
 }
 
+func TestPopularPRPage(t *testing.T) {
+	m := readyModel()
+	m.page = pagePopularPR
+	pr := m.popularPR
+	if pr == nil {
+		t.Fatal("demo should provide a popular PR")
+	}
+	body := m.content().Body
+	for _, text := range []string{pr.Repository, pr.Title, pr.Date, pr.Description, pr.Comments[0].Body, "@ren"} {
+		if !strings.Contains(body, text) {
+			t.Errorf("missing %q in popular PR page", text)
+		}
+	}
+}
+
 func TestWaitingForData(t *testing.T) {
 	m := readyModel()
 	m.loaded = map[string]bool{}

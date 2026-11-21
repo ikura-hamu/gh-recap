@@ -294,7 +294,7 @@ func (m Model) playbackBar(width int) string {
 		}
 		color := "#443A57"
 		if page < m.page {
-			color = colors[page]
+			color = colors[page%len(colors)]
 		}
 		bar.WriteString(ink(color).Render(strings.Repeat("━", segmentWidth) + " "))
 	}

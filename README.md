@@ -49,7 +49,7 @@ Highlights slide horizontally when changing pages: the next page enters from the
 
 ## What's in your recap
 
-Overview, contribution calendar, monthly activity, streaks and weekdays, commits, co-authors, pull requests, reviews, active repositories, repository languages, and a closing summary. Details include issues, new repositories, all rankings, daily records, and collection warnings.
+Overview, contribution calendar, monthly activity, streaks and weekdays, commits, co-authors, pull requests, the most-commented PR in scope, reviews, active repositories, repository languages, and a closing summary. The most-commented PR page shows its opening date, description, up to three conversation comments, and participants. Details include issues, new repositories, all rankings, daily records, and collection warnings.
 
 Five activity sources load concurrently. Once commit contributions load, a sixth source scans co-authors without blocking other highlights. Results appear as each source completes. Failures preserve collected records and are marked incomplete. Nothing is cached or exported.
 

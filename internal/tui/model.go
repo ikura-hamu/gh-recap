@@ -23,13 +23,15 @@ type Model struct {
 	options recap.Options
 	api     recap.API
 
-	login         string
-	identityError error
-	events        []recap.Event
-	coauthors     map[string]int
-	loaded        map[string]bool
-	failed        map[string]bool
-	warnings      []string
+	login           string
+	identityError   error
+	events          []recap.Event
+	coauthors       map[string]int
+	popularPR       *recap.PopularPR
+	popularPRFailed bool
+	loaded          map[string]bool
+	failed          map[string]bool
+	warnings        []string
 
 	page             int
 	width            int
@@ -123,6 +125,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.events = append(m.events, msg.Events...)
 		if msg.Kind == recap.KindCoauthors {
 			m.coauthors = msg.Coauthors
+		}
+		if msg.Kind == recap.KindPullRequests {
+			m.popularPR = msg.PopularPR
+			m.popularPRFailed = msg.PopularPRErr != nil
 		}
 		m.warnings = append(m.warnings, msg.Warnings...)
 		if msg.Err != nil {

@@ -51,11 +51,31 @@ type Event struct {
 
 // Result retains collected events even when a later request fails.
 type Result struct {
-	Kind      string
-	Events    []Event
-	Warnings  []string
-	Err       error
-	Coauthors map[string]int
+	Kind         string
+	Events       []Event
+	Warnings     []string
+	Err          error
+	Coauthors    map[string]int
+	PopularPR    *PopularPR
+	PopularPRErr error
+}
+
+type PopularPR struct {
+	Repository   string
+	Number       int
+	Title        string
+	Date         string
+	URL          string
+	Description  string
+	CommentCount int
+	Comments     []PRComment
+	People       []string
+	MorePeople   bool
+}
+
+type PRComment struct {
+	Author string
+	Body   string
 }
 
 type Stats struct {

@@ -44,7 +44,40 @@ type commitCollection struct {
 
 type pullRequestContribution struct {
 	OccurredAt  string
-	PullRequest struct{ Repository Repo }
+	PullRequest pullRequestCandidate
+}
+
+type pullRequestCandidate struct {
+	Repository Repo
+	ID         string
+	Comments   struct{ TotalCount int }
+}
+
+type pullRequestActor struct{ Login string }
+
+type popularPRQuery struct {
+	Node struct {
+		PullRequest struct {
+			Repository Repo
+			Number     int
+			Title      string
+			CreatedAt  string
+			URL        string
+			BodyText   string
+			Author     *pullRequestActor
+			Comments   struct {
+				TotalCount int
+				Nodes      []struct {
+					Author   *pullRequestActor
+					BodyText string
+				}
+			} `graphql:"comments(first: 3)"`
+			Participants struct {
+				Nodes    []pullRequestActor
+				PageInfo struct{ HasNextPage bool }
+			} `graphql:"participants(first: 20)"`
+		} `graphql:"... on PullRequest"`
+	} `graphql:"node(id: $id)"`
 }
 
 type pullRequestCollection struct {
