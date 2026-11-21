@@ -126,6 +126,27 @@ func TestWaitingForData(t *testing.T) {
 	}
 }
 
+func TestCommitWarningKeepsRecordingStatusAndLabelsPartialCounts(t *testing.T) {
+	m := readyModel()
+	m.options.Recording = true
+	m.acceptResult(recap.Result{Kind: recap.KindCommits, Warnings: []string{"commit repository limit reached"}})
+	if !m.failed[recap.KindCommits] || !m.failed[recap.KindCoauthors] {
+		t.Fatal("commit truncation must mark commits and co-authors incomplete")
+	}
+	count := recap.Summarize(m.events).Kinds[recap.KindCommits]
+	if report := m.markdownDetails(); !strings.Contains(report, fmt.Sprintf("| commits | %d recorded · incomplete |", count)) ||
+		!strings.Contains(report, "commit repository limit reached") {
+		t.Fatal("Markdown must include the partial commit count and the warning")
+	}
+	for _, state := range []string{playing, finished} {
+		status := m.statusView()
+		if !strings.Contains(status, state+" · 1×") || !strings.Contains(status, statusIncomplete) {
+			t.Errorf("VHS should recognize the playback state even with warnings: %q", status)
+		}
+		m.playbackFinished = true
+	}
+}
+
 func TestPlaybackSpeedKeys(t *testing.T) {
 	m := readyModel()
 	m = update(m, tickMsg(m.lastTick.Add(2*time.Second)))

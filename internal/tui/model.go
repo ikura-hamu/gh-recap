@@ -179,6 +179,7 @@ func (m *Model) acceptResult(result recap.Result) {
 		m.warnings = append(m.warnings, result.Kind+": "+result.Err.Error())
 	}
 	if result.Kind == recap.KindCommits && (result.Err != nil || len(result.Warnings) > 0) {
+		m.failed[recap.KindCommits] = true
 		m.failed[recap.KindCoauthors] = true
 	}
 }

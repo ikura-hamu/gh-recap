@@ -283,9 +283,6 @@ func (m Model) statusView() string {
 			state = pausedPrefix + state
 		}
 	}
-	if len(m.failed) > 0 || len(m.warnings) > 0 {
-		state += statusIncomplete
-	}
 	if m.identityError != nil {
 		state = connectionFailed
 	}
@@ -295,8 +292,11 @@ func (m Model) statusView() string {
 		indicator = m.loading.View()
 	}
 	status := fmt.Sprintf(statusFormat, indicator, state, m.speed, len(m.loaded), len(recap.Sources), m.page+1, pageCount)
-	if len(m.warnings) > 0 && m.identityError == nil {
-		status += warningsHint
+	if m.identityError == nil && (len(m.failed) > 0 || len(m.warnings) > 0) {
+		status += statusIncomplete
+		if len(m.warnings) > 0 {
+			status += warningsHint
+		}
 	}
 	return status
 }
