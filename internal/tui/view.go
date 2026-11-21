@@ -35,9 +35,15 @@ func (m Model) scrollLayout() contentLayout {
 	}
 	parts = append(parts, m.banner(headingWidth))
 	if content.Metric != "" {
-		parts = append(parts, metricPadding+m.metricView(content.Metric, headingWidth)+metricPadding)
+		metric := metricPadding + m.metricView(content.Metric, headingWidth)
+		if content.Title != "" {
+			metric += metricPadding
+		}
+		parts = append(parts, metric)
 	}
-	parts = append(parts, titleStyle.Render(ansi.Wrap(content.Title, headingWidth, " ")))
+	if content.Title != "" {
+		parts = append(parts, titleStyle.Render(ansi.Wrap(content.Title, headingWidth, " ")))
+	}
 	heading := strings.Join(parts, "\n")
 	height := max(1, m.bodyHeight()-lipgloss.Height(heading)-len(headingGap)-scrollHintRows)
 	if m.wide() {

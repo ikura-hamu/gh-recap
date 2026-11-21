@@ -36,17 +36,11 @@ func (m Model) content() pageContent {
 
 	switch m.page {
 	case pageOverview:
-		content := pageContent{
+		return pageContent{
 			Eyebrow: overviewKicker,
-			Title:   contributions,
-			Metric:  compactCount(stats.Total),
+			Metric:  fmt.Sprint(m.options.Year),
 			Body:    m.overviewBody(stats),
 		}
-		if !m.ready() {
-			content.Metric = ""
-			content.Title = collectingYear
-		}
-		return content
 	case pageCalendar:
 		return pageContent{
 			Eyebrow: calendarKicker, Title: calendarTitle,

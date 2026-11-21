@@ -22,7 +22,6 @@ const (
 	dailyHeading        = "DAILY ACTIVITY"
 	warningsHeading     = "COLLECTION WARNINGS"
 	linerNotes          = "THE LINER NOTES"
-	collectingYear      = "Collecting your year"
 	scrollHint          = "\n↑/↓ scroll · %d–%d / %d"
 	warningsHint        = " · Enter for warnings"
 	popularPRTitle      = "Most-commented pull request"

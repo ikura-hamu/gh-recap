@@ -68,6 +68,18 @@ func TestPlayback(t *testing.T) {
 	}
 }
 
+func TestOverviewShowsYearBelowBanner(t *testing.T) {
+	m := readyModel()
+	content := m.content()
+	if content.Metric != "2025" || content.Title != "" || !strings.Contains(content.Body, contributions) {
+		t.Fatalf("overview should show the year below RECAP and contributions in the body: %+v", content)
+	}
+	m.loaded = nil
+	if content := m.content(); content.Metric != "2025" || content.Title != "" {
+		t.Fatalf("overview should show the year during collection: %+v", content)
+	}
+}
+
 func TestPopularPRPage(t *testing.T) {
 	m := readyModel()
 	m.page = pagePopularPR
@@ -166,7 +178,7 @@ func TestAllPagesAndSizes(t *testing.T) {
 		for p := 0; p < pageCount; p++ {
 			m.page = p
 			content := m.content()
-			if content.Title == "" || content.Body == "" {
+			if (content.Title == "" && content.Metric == "") || content.Body == "" {
 				t.Fatalf("empty page %d", p)
 			}
 			view := m.View()
