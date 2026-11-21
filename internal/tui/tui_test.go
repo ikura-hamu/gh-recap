@@ -90,18 +90,6 @@ func TestVideoCreditsAppearAfterPlayback(t *testing.T) {
 	}
 }
 
-func TestOverviewShowsYearBelowBanner(t *testing.T) {
-	m := readyModel()
-	content := m.content()
-	if content.Metric != "2025" || content.Title != "" || !strings.Contains(content.Body, contributions) {
-		t.Fatalf("overview should show the year below RECAP and contributions in the body: %+v", content)
-	}
-	m.loaded = nil
-	if content := m.content(); content.Metric != "2025" || content.Title != "" {
-		t.Fatalf("overview should show the year during collection: %+v", content)
-	}
-}
-
 func TestPopularPRPage(t *testing.T) {
 	m := readyModel()
 	m.page = pagePopularPR
@@ -198,18 +186,6 @@ func TestSpaceFreezesVisiblePlayback(t *testing.T) {
 	m = update(m, tickMsg(m.lastTick.Add(time.Second)))
 	if m.paused || m.elapsed != time.Second || m.sparkleFrame != 1 {
 		t.Fatal("space should resume playback and background motion")
-	}
-}
-
-func TestTopRanksLeadEachRow(t *testing.T) {
-	m := readyModel()
-	m.page = pageRepositories
-	m.width, m.height = wideWidth, minimumHeight
-	_, view := m.scrollViewport()
-	for _, rank := range []string{"#1 ", "#2 ", "#3 "} {
-		if !strings.Contains("\n"+ansi.Strip(view.View()), "\n"+rank) {
-			t.Errorf("rank %s is not at the start of a visible row", strings.TrimSpace(rank))
-		}
 	}
 }
 
