@@ -127,10 +127,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(commands...)
 	case recap.Result:
+		wasReady := m.ready()
 		m.viewportCache = nil
 		m.acceptResult(msg)
-		if !m.paused {
-			m.elapsed = 0
+		if !wasReady && m.ready() {
+			m.lastTick = time.Time{}
 		}
 		if msg.Kind == recap.KindCommits {
 			command = func() tea.Msg { return m.loadCoauthors(msg.Events) }

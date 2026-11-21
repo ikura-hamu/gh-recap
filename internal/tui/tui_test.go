@@ -40,9 +40,12 @@ func readyModel() Model {
 
 func TestPlayback(t *testing.T) {
 	m := readyModel()
-	m = update(m, tickMsg(m.lastTick.Add(6*time.Second)))
+	delete(m.loaded, recap.KindCoauthors)
+	m = update(m, tickMsg(m.lastTick.Add(4*time.Second)))
+	m = update(m, recap.Demo(m.options, recap.KindCoauthors))
+	m = update(m, tickMsg(m.lastTick.Add(2*time.Second)))
 	if m.page != pageCalendar {
-		t.Fatal("autoplay did not advance")
+		t.Fatal("late co-authors should not delay autoplay")
 	}
 	m = update(m, pressKey("space"))
 	m = update(m, tickMsg(m.lastTick.Add(20*time.Second)))
