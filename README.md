@@ -43,7 +43,7 @@ The default year is the current local year. API date boundaries use UTC, January
 | `PgUp` / `PgDn`, `Ctrl+B` / `Ctrl+F` | Scroll one page |
 | `q`, `Ctrl+C` | Quit |
 
-Autoplay uses eight seconds per page, twelve for the calendar, repository ranking, and languages. Manual navigation resets the timer. Details suspend autoplay without changing your pause preference. Playback waits for the current page's data and finishes on the last page.
+Autoplay uses six seconds per page. Manual navigation resets the timer. Details suspend autoplay without changing your pause preference. Playback waits for the current page's data and finishes on the last page.
 
 Highlights slide horizontally when changing pages: the next page enters from the right, and the previous page enters from the left. The header and controls stay in place. Use `--no-animation` for instant page changes.
 

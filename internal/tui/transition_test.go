@@ -58,7 +58,7 @@ func TestTransitionLifecycle(t *testing.T) {
 	if m.transition.active() || m.transition.from != "" || m.transitionBodyView() != m.bodyView() {
 		t.Fatal("completed transition should release the old page")
 	}
-	m = update(m, tickMsg(m.lastTick.Add(m.duration()+time.Second)))
+	m = update(m, tickMsg(m.lastTick.Add(pageDuration+time.Second)))
 	if !m.transition.active() {
 		t.Fatal("autoplay should also animate page changes")
 	}

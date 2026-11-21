@@ -294,7 +294,7 @@ func (m Model) playbackBar(width int) string {
 	var bar strings.Builder
 	for page := 0; page < pageCount; page++ {
 		if page == m.page {
-			fraction := float64(m.elapsed) / float64(m.duration())
+			fraction := float64(m.elapsed) / float64(pageDuration)
 			bar.WriteString(progressBar(fraction, segmentWidth, m.color()) + " ")
 			continue
 		}

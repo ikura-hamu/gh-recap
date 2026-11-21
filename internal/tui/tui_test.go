@@ -40,7 +40,7 @@ func readyModel() Model {
 
 func TestPlayback(t *testing.T) {
 	m := readyModel()
-	m = update(m, tickMsg(m.lastTick.Add(8*time.Second)))
+	m = update(m, tickMsg(m.lastTick.Add(6*time.Second)))
 	if m.page != pageCalendar {
 		t.Fatal("autoplay did not advance")
 	}
@@ -62,7 +62,7 @@ func TestPlayback(t *testing.T) {
 	m.showDetails = false
 	m.page = pageSummary
 	m.elapsed = 0
-	m = update(m, tickMsg(m.lastTick.Add(8*time.Second)))
+	m = update(m, tickMsg(m.lastTick.Add(6*time.Second)))
 	if !m.playbackFinished || m.page != pageSummary {
 		t.Fatal("final page should stop")
 	}
@@ -121,9 +121,9 @@ func TestPlaybackSpeedKeys(t *testing.T) {
 			t.Fatal("changing speed should preserve the page and its progress")
 		}
 	}
-	m = update(m, tickMsg(m.lastTick.Add(3*time.Second)))
+	m = update(m, tickMsg(m.lastTick.Add(2*time.Second)))
 	if m.page != pageCalendar || m.speed != 2 {
-		t.Fatal("at 2×, three real seconds should finish the remaining six seconds")
+		t.Fatal("at 2×, two real seconds should finish the remaining four seconds")
 	}
 
 	m = update(m, pressKey("enter"))

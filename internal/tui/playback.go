@@ -22,29 +22,28 @@ const (
 	pageCount
 )
 
+const pageDuration = 6 * time.Second
+
 type pageDefinition struct {
-	Banner   string
-	Duration time.Duration
+	Banner string
 	// An empty source means this page combines all activity sources.
 	Source string
 }
 
 var pageDefinitions = [pageCount]pageDefinition{
-	pageOverview:     {Banner: "RECAP", Duration: 8 * time.Second},
-	pageCalendar:     {Banner: "ACTIVITY", Duration: 12 * time.Second},
-	pageMonths:       {Banner: "RHYTHM", Duration: 8 * time.Second},
-	pageStreak:       {Banner: "STREAK", Duration: 8 * time.Second},
-	pageCommits:      {Banner: "COMMITS", Duration: 8 * time.Second, Source: recap.KindCommits},
-	pageCoauthors:    {Banner: "COAUTHORS", Duration: 12 * time.Second, Source: recap.KindCoauthors},
-	pagePullRequests: {Banner: "PULL REQS", Duration: 8 * time.Second, Source: recap.KindPullRequests},
-	pagePopularPR:    {Banner: "POPULAR PR", Duration: 16 * time.Second, Source: recap.KindPullRequests},
-	pageReviews:      {Banner: "REVIEWS", Duration: 8 * time.Second, Source: recap.KindReviews},
-	pageRepositories: {Banner: "REPOS", Duration: 12 * time.Second},
-	pageLanguages:    {Banner: "LANGUAGES", Duration: 12 * time.Second},
-	pageSummary:      {Banner: "ENCORE", Duration: 8 * time.Second},
+	pageOverview:     {Banner: "RECAP"},
+	pageCalendar:     {Banner: "ACTIVITY"},
+	pageMonths:       {Banner: "RHYTHM"},
+	pageStreak:       {Banner: "STREAK"},
+	pageCommits:      {Banner: "COMMITS", Source: recap.KindCommits},
+	pageCoauthors:    {Banner: "COAUTHORS", Source: recap.KindCoauthors},
+	pagePullRequests: {Banner: "PULL REQS", Source: recap.KindPullRequests},
+	pagePopularPR:    {Banner: "POPULAR PR", Source: recap.KindPullRequests},
+	pageReviews:      {Banner: "REVIEWS", Source: recap.KindReviews},
+	pageRepositories: {Banner: "REPOS"},
+	pageLanguages:    {Banner: "LANGUAGES"},
+	pageSummary:      {Banner: "ENCORE"},
 }
-
-func (m Model) duration() time.Duration { return pageDefinitions[m.page].Duration }
 
 func (m *Model) changeSpeed(factor float64) {
 	m.speed = min(4, max(0.5, m.speed*factor))
@@ -83,7 +82,7 @@ func (m *Model) advancePlayback(now time.Time) {
 	canAdvance := !m.tooSmall() && !m.lastTick.IsZero() && !m.paused && !m.showDetails && !m.playbackFinished && m.ready() && m.identityError == nil
 	if canAdvance {
 		m.elapsed += time.Duration(float64(now.Sub(m.lastTick)) * m.speed)
-		if m.elapsed >= m.duration() {
+		if m.elapsed >= pageDuration {
 			if m.page == pageSummary {
 				m.playbackFinished = true
 			} else {
