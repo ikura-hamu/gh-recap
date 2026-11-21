@@ -10,10 +10,7 @@ func Demo(options Options, kind string) Result {
 		result.Coauthors = map[string]int{"@aki": 42, "@haru": 27, "@sora": 18, "@ren": 9, "pair@example.com": 3}
 		return result
 	}
-	end := time.Date(options.Year+1, 1, 1, 0, 0, 0, 0, time.UTC)
-	if now := time.Now(); now.Before(end) {
-		end = now
-	}
+	start, end := yearWindow(options.Year, time.Now())
 	repositories := []Repo{
 		{NameWithOwner: "you/gh-recap", PrimaryLanguage: &Language{Name: "Go"}},
 		{NameWithOwner: "charmbracelet/bubbletea", PrimaryLanguage: &Language{Name: "Go"}},
@@ -28,8 +25,7 @@ func Demo(options Options, kind string) Result {
 		}
 	}
 
-	date := time.Date(options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
-	for day := 0; date.Before(end); day, date = day+1, date.AddDate(0, 0, 1) {
+	for day, date := 0, start; !date.After(end); day, date = day+1, date.AddDate(0, 0, 1) {
 		inactiveDay := (day*7+kindIndex*11)%13 > 7
 		skipRepositoryCreation := kind == KindRepositories && day%47 != 0
 		if inactiveDay || skipRepositoryCreation {

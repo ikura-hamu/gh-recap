@@ -9,16 +9,24 @@ import (
 )
 
 func Fetch(ctx context.Context, client API, options Options, kind string) Result {
-	start := time.Date(options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
-	end := start.AddDate(1, 0, 0).Add(-time.Second)
-	if now := time.Now(); now.Before(end) {
-		end = now
+	start, end := yearWindow(options.Year, time.Now())
+	if end.Before(start) {
+		return Result{Kind: kind}
 	}
 
 	if kind == KindCommits {
 		return fetchCommits(ctx, client, options, start, end)
 	}
 	return fetchContributions(ctx, client, options, kind, start, end)
+}
+
+func yearWindow(year int, now time.Time) (start, end time.Time) {
+	start = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+	end = start.AddDate(1, 0, 0).Add(-time.Second)
+	if now.Before(end) {
+		end = now.UTC()
+	}
+	return start, end
 }
 
 func dateVariables(start, end time.Time) map[string]any {
@@ -61,6 +69,7 @@ func fetchContributions(ctx context.Context, client API, options Options, kind s
 	variables := dateVariables(start, end)
 	// A typed nil generates a nullable String variable for the first page.
 	var cursor *graphql.String
+	seenCursors := make(map[string]bool)
 	for {
 		variables["after"] = cursor
 		page, err := fetchContributionPage(ctx, client, options, &result, variables, &bestPR)
@@ -71,10 +80,11 @@ func fetchContributions(ctx context.Context, client API, options Options, kind s
 		if !page.HasNextPage {
 			break
 		}
-		if page.EndCursor == "" || cursor != nil && page.EndCursor == string(*cursor) {
+		if page.EndCursor == "" || seenCursors[page.EndCursor] {
 			result.Err = fmt.Errorf("pagination did not advance")
 			break
 		}
+		seenCursors[page.EndCursor] = true
 		next := graphql.String(page.EndCursor)
 		cursor = &next
 	}

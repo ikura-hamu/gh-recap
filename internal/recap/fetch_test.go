@@ -3,10 +3,28 @@ package recap
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestContributionPaginationStopsAtCursorCycle(t *testing.T) {
+	cursors := []any{nil, "a", "b"}
+	calls := 0
+	client := testAPI(t, func(request graphQLRequest) (string, error) {
+		if calls >= len(cursors) || request.Variables["after"] != cursors[calls] {
+			t.Fatalf("unexpected cursor after %d calls: %v", calls, request.Variables["after"])
+		}
+		next := []string{"a", "b", "a"}[calls]
+		calls++
+		return fmt.Sprintf(`{"data":{"viewer":{"contributionsCollection":{"issueContributions":{"nodes":[],"pageInfo":{"hasNextPage":true,"endCursor":%q}}}}}}`, next), nil
+	})
+	result := Fetch(context.Background(), client, Options{Year: 2025}, KindIssues)
+	if calls != len(cursors) || result.Err == nil || !strings.Contains(result.Err.Error(), "pagination did not advance") {
+		t.Fatalf("expected a pagination error after three requests, got %d requests and %v", calls, result.Err)
+	}
+}
 
 func TestPaginationAndPrivacy(t *testing.T) {
 	tests := []struct {

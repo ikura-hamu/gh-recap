@@ -54,10 +54,9 @@ type coauthorAuthorsQuery struct {
 // commits shared by forks. This supplementary result never contributes Events.
 func FetchCoauthors(ctx context.Context, client API, options Options, login string, repositories []Repo) Result {
 	result := Result{Kind: KindCoauthors, Coauthors: make(map[string]int)}
-	start := time.Date(options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
-	end := start.AddDate(1, 0, 0).Add(-time.Second)
-	if now := time.Now(); now.Before(end) {
-		end = now
+	start, end := yearWindow(options.Year, time.Now())
+	if end.Before(start) {
+		return result
 	}
 	seenRepos, seenCommits := make(map[string]bool), make(map[string]bool)
 	for _, repository := range repositories {
@@ -127,7 +126,7 @@ func scanCoauthorRepository(ctx context.Context, client API, options Options, lo
 }
 
 func allCommitAuthors(ctx context.Context, client API, commit sharedCommit) ([]commitActor, error) {
-	authors := append([]commitActor{}, commit.Authors.Nodes...)
+	authors := commit.Authors.Nodes
 	page := commit.Authors.PageInfo
 	cursors := make(map[string]bool)
 	for page.HasNextPage {
