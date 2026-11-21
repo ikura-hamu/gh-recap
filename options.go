@@ -17,7 +17,8 @@ type commandOptions struct {
 }
 
 func parseOptions(args []string, out io.Writer) (commandOptions, error) {
-	options := commandOptions{Options: recap.Options{Year: time.Now().Year()}}
+	currentYear := time.Now().Year()
+	options := commandOptions{Options: recap.Options{Year: currentYear}}
 	flags := flag.NewFlagSet("gh recap", flag.ContinueOnError)
 	flags.SetOutput(out)
 	flags.BoolVar(&options.IncludePrivate, "include-private", false, "include accessible private repositories")
@@ -36,11 +37,16 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 		flags.PrintDefaults()
 	}
 	flagArgs := []string{}
-	year := ""
+	var year *string
+	positionalOnly := false
 	// flag stops at the first positional argument; reorder flags to also accept YEAR first.
 	for i := 0; i < len(args); i++ {
 		argument := args[i]
-		if argument == "--output" || argument == "-output" {
+		if !positionalOnly && argument == "--" {
+			positionalOnly = true
+			continue
+		}
+		if !positionalOnly && (argument == "--output" || argument == "-output") {
 			if i+1 == len(args) {
 				return options, fmt.Errorf("%s requires a file path", argument)
 			}
@@ -55,22 +61,22 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 			options.command = argument
 			continue
 		}
-		if len(argument) > 0 && argument[0] != '-' {
-			if year != "" {
-				return options, fmt.Errorf("specify only one year")
-			}
-			year = argument
-		} else {
+		if !positionalOnly && len(argument) > 1 && argument[0] == '-' {
 			flagArgs = append(flagArgs, argument)
+			continue
 		}
+		if year != nil {
+			return options, fmt.Errorf("specify only one year")
+		}
+		year = &argument
 	}
 	if err := flags.Parse(flagArgs); err != nil {
 		return options, err
 	}
-	if year != "" {
-		parsedYear, err := strconv.Atoi(year)
-		if err != nil || parsedYear < 2008 || parsedYear > time.Now().Year() {
-			return options, fmt.Errorf("year must be between 2008 and %d", time.Now().Year())
+	if year != nil {
+		parsedYear, err := strconv.Atoi(*year)
+		if err != nil || parsedYear < 2008 || parsedYear > currentYear {
+			return options, fmt.Errorf("year must be between 2008 and %d", currentYear)
 		}
 		options.Year = parsedYear
 	}
