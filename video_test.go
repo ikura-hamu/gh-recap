@@ -19,7 +19,7 @@ func TestRecordVideo(t *testing.T) {
 	t.Setenv("PATH", dir)
 	options := commandOptions{
 		Options: recap.Options{Year: 2025, Demo: true, IncludePrivate: true, NoAnimation: true},
-		video:   filepath.Join(dir, "test video.mp4"),
+		output:  filepath.Join(dir, "test video.mp4"),
 	}
 	ctx := context.Background()
 	if err := recordVideo(ctx, options); err == nil || !strings.Contains(err.Error(), "brew install vhs") {
@@ -45,21 +45,21 @@ fi
 	if err := os.WriteFile(filepath.Join(dir, "vhs"), []byte(fakeVHS), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(options.video, []byte("previous recording"), 0600); err != nil {
+	if err := os.WriteFile(options.output, []byte("previous recording"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("GH_RECAP_TEST_FINISH", "0")
 	if err := recordVideo(ctx, options); err == nil || !strings.Contains(err.Error(), "playback did not reach the final page") {
 		t.Fatalf("expected incomplete playback error, got %v", err)
 	}
-	if output, err := os.ReadFile(options.video); err != nil || string(output) != "previous recording" {
+	if output, err := os.ReadFile(options.output); err != nil || string(output) != "previous recording" {
 		t.Fatalf("previous video should survive an incomplete recording: %q, %v", output, err)
 	}
 	t.Setenv("GH_RECAP_TEST_FINISH", "1")
 	if err := recordVideo(ctx, options); err != nil {
 		t.Fatal(err)
 	}
-	if output, err := os.ReadFile(options.video); err != nil || string(output) != "test recording" {
+	if output, err := os.ReadFile(options.output); err != nil || string(output) != "test recording" {
 		t.Fatalf("unexpected video output: %q, %v", output, err)
 	}
 }

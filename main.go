@@ -22,19 +22,32 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-	if options.video != "" {
+	switch options.command {
+	case "video":
 		return recordVideo(ctx, options)
+	case "md":
+		return exportMarkdown(ctx, options, &recap.GitHub{})
 	}
 	donePath := os.Getenv(videoDoneEnv)
 	options.Recording = donePath != ""
 	final, err := tea.NewProgram(tui.New(ctx, options.Options, &recap.GitHub{})).Run()
+	model, ok := final.(tui.Model)
+	if ok {
+		printCollectionWarnings(model.CollectionWarnings())
+	}
 	if err != nil || donePath == "" {
 		return err
 	}
-	if err := final.(tui.Model).RecordingResult(); err != nil {
+	if err := model.RecordingResult(); err != nil {
 		return err
 	}
 	return os.WriteFile(donePath, nil, 0600)
+}
+
+func printCollectionWarnings(warnings []string) {
+	for _, warning := range warnings {
+		fmt.Fprintln(os.Stderr, "gh recap: warning:", warning)
+	}
 }
 
 func main() {

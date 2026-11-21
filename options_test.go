@@ -24,17 +24,23 @@ func TestArguments(t *testing.T) {
 	}
 }
 
-func TestVideoArguments(t *testing.T) {
-	for _, args := range [][]string{
-		{"2025", "--video", "my recap.mp4", "--demo"},
-		{"--video=my recap.mp4", "--demo", "2025"},
+func TestExportArguments(t *testing.T) {
+	for _, test := range []struct {
+		args    []string
+		command string
+		output  string
+	}{
+		{[]string{"md", "2025", "--demo"}, "md", "gh-recap_2025.md"},
+		{[]string{"video", "2025", "--demo"}, "video", "gh-recap_2025.mp4"},
+		{[]string{"video", "2025", "--output", "my recap.mp4", "--demo"}, "video", "my recap.mp4"},
+		{[]string{"md", "--output=my recap.md", "--demo", "2025"}, "md", "my recap.md"},
 	} {
-		options, err := parseOptions(args, io.Discard)
-		if err != nil || options.video != "my recap.mp4" || options.Year != 2025 || !options.Demo {
-			t.Fatalf("parse %v: %+v %v", args, options, err)
+		options, err := parseOptions(test.args, io.Discard)
+		if err != nil || options.command != test.command || options.output != test.output || options.Year != 2025 || !options.Demo {
+			t.Fatalf("parse %v: %+v %v", test.args, options, err)
 		}
 	}
-	for _, args := range [][]string{{"--video"}, {"--video="}, {"--video", "recap.gif"}} {
+	for _, args := range [][]string{{"video", "--output"}, {"md", "--output="}, {"--output", "recap.md"}, {"md", "video"}} {
 		if _, err := parseOptions(args, io.Discard); err == nil {
 			t.Errorf("accepted invalid arguments %v", args)
 		}

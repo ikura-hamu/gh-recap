@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
@@ -9,6 +10,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/ikura-hamu/gh-recap/internal/recap"
 )
+
+func (m Model) CollectionWarnings() []string {
+	return slices.Clone(m.warnings)
+}
 
 type viewerMsg struct {
 	login string
@@ -75,15 +80,17 @@ func (m Model) Init() tea.Cmd {
 	if !m.options.NoAnimation {
 		spin = m.loading.Tick
 	}
-	return tea.Batch(tick(), spin, func() tea.Msg {
-		if m.options.Demo {
-			return viewerMsg{login: "you"}
-		}
-		ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
-		defer cancel()
-		login, err := recap.Viewer(ctx, m.api)
-		return viewerMsg{login, err}
-	})
+	return tea.Batch(tick(), spin, func() tea.Msg { return m.loadViewer() })
+}
+
+func (m Model) loadViewer() viewerMsg {
+	if m.options.Demo {
+		return viewerMsg{login: "you"}
+	}
+	ctx, cancel := context.WithTimeout(m.ctx, 30*time.Second)
+	defer cancel()
+	login, err := recap.Viewer(ctx, m.api)
+	return viewerMsg{login, err}
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -116,33 +123,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		commands := make([]tea.Cmd, 0, len(recap.Kinds))
 		for _, kind := range recap.Kinds {
-			commands = append(commands, m.fetchActivity(kind))
+			commands = append(commands, func() tea.Msg { return m.loadActivity(kind) })
 		}
 		return m, tea.Batch(commands...)
 	case recap.Result:
 		m.viewportCache = nil
-		m.loaded[msg.Kind] = true
-		m.events = append(m.events, msg.Events...)
-		if msg.Kind == recap.KindCoauthors {
-			m.coauthors = msg.Coauthors
-		}
-		if msg.Kind == recap.KindPullRequests {
-			m.popularPR = msg.PopularPR
-			m.popularPRFailed = msg.PopularPRErr != nil
-		}
-		m.warnings = append(m.warnings, msg.Warnings...)
-		if msg.Err != nil {
-			m.failed[msg.Kind] = true
-			m.warnings = append(m.warnings, msg.Kind+": "+msg.Err.Error())
-		}
+		m.acceptResult(msg)
 		if !m.paused {
 			m.elapsed = 0
 		}
 		if msg.Kind == recap.KindCommits {
-			if msg.Err != nil || len(msg.Warnings) > 0 {
-				m.failed[recap.KindCoauthors] = true
-			}
-			command = m.fetchCoauthors(msg.Events)
+			command = func() tea.Msg { return m.loadCoauthors(msg.Events) }
 		}
 	case tea.WindowSizeMsg:
 		m.transition.from = ""
@@ -171,28 +162,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, command
 }
 
-func (m Model) fetchCoauthors(events []recap.Event) tea.Cmd {
-	return func() tea.Msg {
-		if m.options.Demo {
-			return recap.Demo(m.options, recap.KindCoauthors)
-		}
-		repositories := make([]recap.Repo, 0, len(events))
-		for _, event := range events {
-			repositories = append(repositories, event.Repo)
-		}
-		ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
-		defer cancel()
-		return recap.FetchCoauthors(ctx, m.api, m.options, m.login, repositories)
+func (m *Model) acceptResult(result recap.Result) {
+	m.loaded[result.Kind] = true
+	m.events = append(m.events, result.Events...)
+	if result.Kind == recap.KindCoauthors {
+		m.coauthors = result.Coauthors
+	}
+	if result.Kind == recap.KindPullRequests {
+		m.popularPR = result.PopularPR
+		m.popularPRFailed = result.PopularPRErr != nil
+	}
+	m.warnings = append(m.warnings, result.Warnings...)
+	if result.Err != nil {
+		m.failed[result.Kind] = true
+		m.warnings = append(m.warnings, result.Kind+": "+result.Err.Error())
+	}
+	if result.Kind == recap.KindCommits && (result.Err != nil || len(result.Warnings) > 0) {
+		m.failed[recap.KindCoauthors] = true
 	}
 }
 
-func (m Model) fetchActivity(kind string) tea.Cmd {
-	return func() tea.Msg {
-		if m.options.Demo {
-			return recap.Demo(m.options, kind)
-		}
-		ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
-		defer cancel()
-		return recap.Fetch(ctx, m.api, m.options, kind)
+func (m Model) loadCoauthors(events []recap.Event) recap.Result {
+	if m.options.Demo {
+		return recap.Demo(m.options, recap.KindCoauthors)
 	}
+	repositories := make([]recap.Repo, 0, len(events))
+	for _, event := range events {
+		repositories = append(repositories, event.Repo)
+	}
+	ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
+	defer cancel()
+	return recap.FetchCoauthors(ctx, m.api, m.options, m.login, repositories)
+}
+
+func (m Model) loadActivity(kind string) recap.Result {
+	if m.options.Demo {
+		return recap.Demo(m.options, kind)
+	}
+	ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
+	defer cancel()
+	return recap.Fetch(ctx, m.api, m.options, kind)
 }

@@ -209,17 +209,25 @@ func (m Model) detailsContent(stats recap.Stats, chartWidth int) pageContent {
 	fmt.Fprintln(&body, "\n"+heading.Render(languagesHeading)+languageCount+ranking(recap.Ranked(stats.Languages), chartWidth))
 	fmt.Fprintln(&body, "\n"+heading.Render(coauthorsHeading)+sharedCommits+m.coauthorRanking(chartWidth))
 	fmt.Fprintln(&body, "\n"+heading.Render(dailyHeading))
-	start := time.Date(m.options.Year, 1, 1, 0, 0, 0, 0, time.UTC)
-	for date := start; date.Year() == m.options.Year; date = date.AddDate(0, 0, 1) {
-		day := date.Format(time.DateOnly)
-		if stats.Days[day] > 0 {
-			fmt.Fprintf(&body, "%s  %d\n", day, stats.Days[day])
-		}
+	for _, day := range dailyActivity(stats, m.options.Year) {
+		fmt.Fprintf(&body, "%s  %d\n", day.Name, day.Count)
 	}
 	if len(m.warnings) > 0 {
 		fmt.Fprintln(&body, "\n"+heading.Render(warningsHeading)+"\n"+strings.Join(m.warnings, "\n"))
 	}
 	return pageContent{Title: detailsTitle, Body: body.String()}
+}
+
+func dailyActivity(stats recap.Stats, year int) []recap.Entry {
+	var entries []recap.Entry
+	start := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+	for date := start; date.Year() == year; date = date.AddDate(0, 0, 1) {
+		day := date.Format(time.DateOnly)
+		if count := stats.Days[day]; count > 0 {
+			entries = append(entries, recap.Entry{Name: day, Count: count})
+		}
+	}
+	return entries
 }
 
 func (m Model) coauthorRanking(width int) string {

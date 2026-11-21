@@ -29,14 +29,18 @@ Recap text is maintained in [internal/tui/copy.go](internal/tui/copy.go).
 
 The default year is the current local year. API date boundaries use UTC, January 1 through December 31 (or now for the current year). Future years and years before 2008 are rejected.
 
-## Record a video
+## Export your recap
 
 ```sh
-gh recap 2025 --video recap.mp4
-gh recap --demo --video demo.mp4
+gh recap md 2025
+gh recap md 2025 --output "my recap.md"
+gh recap video 2025
+gh recap video --demo --output demo.mp4
 ```
 
-Video export records the full autoplay sequence as a 1280 × 720 MP4 (16:9). It waits for collection before recording and takes about 72 seconds of playback plus collection and encoding time. A successful recording replaces any existing file at the output path. The usual flags apply, including `--include-private` when you want private activity in the saved video.
+Markdown export includes the Detail view's activity counts, repository and language rankings, co-authors, daily activity, and collection warnings. Output defaults to `gh-recap_{year}.md` for Markdown and `gh-recap_{year}.mp4` for video. Both commands accept `--output` and replace an existing file after a successful export.
+
+Video export records the full autoplay sequence as a 1280 × 720 MP4 (16:9). It waits for collection before recording and takes about 72 seconds of playback plus collection and encoding time. Use `--include-private` to include accessible private activity in exports.
 
 The video ends with a six-second credit screen showing how to install `gh recap`. Install [VHS](https://github.com/charmbracelet/vhs#installation) and put `vhs`, `ttyd`, and `ffmpeg` on your `PATH`. The recorder uses Bash.
 

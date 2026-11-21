@@ -4,9 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ikura-hamu/gh-recap/internal/recap"
@@ -14,7 +12,8 @@ import (
 
 type commandOptions struct {
 	recap.Options
-	video string
+	command string
+	output  string
 }
 
 func parseOptions(args []string, out io.Writer) (commandOptions, error) {
@@ -24,15 +23,16 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	flags.BoolVar(&options.IncludePrivate, "include-private", false, "include accessible private repositories")
 	flags.BoolVar(&options.Demo, "demo", false, "explore fictional activity without authentication")
 	flags.BoolVar(&options.NoAnimation, "no-animation", false, "disable decorative animations (autoplay stays enabled)")
-	flags.Func("video", "record the recap as an MP4 using VHS (FILE.mp4)", func(path string) error {
-		if !strings.EqualFold(filepath.Ext(path), ".mp4") {
-			return fmt.Errorf("video output must have an .mp4 extension")
+	flags.Func("output", "output file path for md or video", func(path string) error {
+		if path == "" {
+			return fmt.Errorf("output path cannot be empty")
 		}
-		options.video = path
+		options.output = path
 		return nil
 	})
 	flags.Usage = func() {
-		fmt.Fprintln(out, "Usage: gh recap [YEAR] [--include-private] [--demo] [--no-animation] [--video FILE.mp4]")
+		fmt.Fprintln(out, "Usage: gh recap [YEAR] [--include-private] [--demo] [--no-animation]")
+		fmt.Fprintln(out, "       gh recap {md|video} [YEAR] [--output FILE] [--include-private] [--demo] [--no-animation]")
 		flags.PrintDefaults()
 	}
 	flagArgs := []string{}
@@ -40,12 +40,19 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	// flag stops at the first positional argument; reorder flags to also accept YEAR first.
 	for i := 0; i < len(args); i++ {
 		argument := args[i]
-		if argument == "--video" || argument == "-video" {
+		if argument == "--output" || argument == "-output" {
 			if i+1 == len(args) {
-				return options, fmt.Errorf("%s requires an MP4 output path", argument)
+				return options, fmt.Errorf("%s requires a file path", argument)
 			}
 			flagArgs = append(flagArgs, argument, args[i+1])
 			i++
+			continue
+		}
+		if argument == "md" || argument == "video" {
+			if options.command != "" {
+				return options, fmt.Errorf("specify only one export command")
+			}
+			options.command = argument
 			continue
 		}
 		if len(argument) > 0 && argument[0] != '-' {
@@ -66,6 +73,17 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 			return options, fmt.Errorf("year must be between 2008 and %d", time.Now().Year())
 		}
 		options.Year = parsedYear
+	}
+	if options.command == "" {
+		if options.output != "" {
+			return options, fmt.Errorf("--output requires the md or video command")
+		}
+	} else if options.output == "" {
+		extension := "md"
+		if options.command == "video" {
+			extension = "mp4"
+		}
+		options.output = fmt.Sprintf("gh-recap_%d.%s", options.Year, extension)
 	}
 	return options, nil
 }

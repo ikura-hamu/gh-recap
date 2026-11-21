@@ -28,6 +28,7 @@ type Language struct{ Name string }
 
 type Repo struct {
 	NameWithOwner   string
+	URL             string
 	IsPrivate       bool
 	Visibility      string
 	PrimaryLanguage *Language

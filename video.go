@@ -23,7 +23,7 @@ func recordVideo(ctx context.Context, options commandOptions) error {
 	if err != nil {
 		return err
 	}
-	output, err := filepath.Abs(options.video)
+	output, err := filepath.Abs(options.output)
 	if err != nil {
 		return err
 	}
@@ -56,15 +56,19 @@ func recordVideo(ctx context.Context, options commandOptions) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	fmt.Fprintln(os.Stderr, "Recording your recap with VHS…")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("VHS recording failed: %w", err)
+	runErr := cmd.Run()
+	message, _ := os.ReadFile(log)
+	if runErr != nil {
+		_, _ = os.Stderr.Write(message)
+		return fmt.Errorf("VHS recording failed: %w", runErr)
 	}
 	if _, err := os.Stat(done); err != nil {
-		if message, err := os.ReadFile(log); err == nil && len(message) > 0 {
+		if len(message) > 0 {
 			return fmt.Errorf("recording did not finish: %s", strings.TrimSpace(string(message)))
 		}
 		return fmt.Errorf("recording did not reach the end of playback")
 	}
+	_, _ = os.Stderr.Write(message)
 
 	recording := filepath.Join(dir, videoName)
 	info, err := os.Stat(recording)
