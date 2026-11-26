@@ -14,29 +14,8 @@ import (
 
 // CollectMarkdown runs the same collection as the recap without starting a terminal UI.
 func CollectMarkdown(ctx context.Context, options recap.Options, api recap.API) (report string, warnings []string, err error) {
-	m := New(ctx, options, api)
-	viewer := m.loadViewer()
-	if viewer.err != nil {
-		return "", nil, fmt.Errorf("couldn't load GitHub identity: %w", viewer.err)
-	}
-	m.login = viewer.login
-	loader := m
-	results := make(chan recap.Result, len(recap.Sources))
-	for _, kind := range recap.Kinds {
-		go func() { results <- loader.loadActivity(kind) }()
-	}
-	for range recap.Sources {
-		select {
-		case <-ctx.Done():
-			return "", m.CollectionWarnings(), ctx.Err()
-		case result := <-results:
-			m.acceptResult(result)
-			if result.Kind == recap.KindCommits {
-				go func() { results <- loader.loadCoauthors(result.Events) }()
-			}
-		}
-	}
-	if err := ctx.Err(); err != nil {
+	m, err := collect(ctx, options, api, true)
+	if err != nil {
 		return "", m.CollectionWarnings(), err
 	}
 	return m.markdownDetails(), m.CollectionWarnings(), nil

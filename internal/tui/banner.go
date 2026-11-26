@@ -76,16 +76,35 @@ func displayWithSpacing(text, spacing string) string {
 }
 
 func (m Model) banner(width int) string {
-	name := m.displayName()
 	if m.showDetails {
 		return ink(m.color()).Bold(true).Render(linerNotes)
 	}
+	if m.imageExport {
+		return m.bannerText("GITHUB", width) + "\n\n" + m.bannerText("RECAP", width)
+	}
+	return m.bannerText(m.displayName(), width)
+}
+
+func (m Model) compactBanner() bool { return !m.wide() && m.height < fullDisplayHeight }
+
+// In a stacked image, make room for the second word without shrinking the viewport.
+func (m Model) imageBannerExtraRows() int {
+	if !m.imageExport || m.wide() {
+		return 0
+	}
+	if m.compactBanner() {
+		return compactDisplayHeight + 1
+	}
+	return displayHeight + 1
+}
+
+func (m Model) bannerText(name string, width int) string {
 	large := display(name)
 	if width < lipgloss.Width(large) || m.height < minimumHeight {
 		return ink(m.color()).Bold(true).Render(name)
 	}
 	rows := strings.Split(large, "\n")
-	if !m.wide() && m.height < fullDisplayHeight {
+	if m.compactBanner() {
 		rows = compactRows(rows)
 	}
 	for i, row := range rows {

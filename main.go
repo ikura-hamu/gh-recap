@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/ikura-hamu/gh-recap/internal/recap"
@@ -20,6 +21,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if options.fontLicense {
+		_, err := fmt.Fprint(os.Stdout, tui.ImageFontLicense)
+		return err
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	switch options.command {
@@ -27,6 +32,17 @@ func run() error {
 		return recordVideo(ctx, options)
 	case "md":
 		return exportMarkdown(ctx, options, &recap.GitHub{})
+	case "image":
+		output, err := filepath.Abs(options.output)
+		if err != nil {
+			return err
+		}
+		warnings, err := tui.ExportImage(ctx, options.Options, &recap.GitHub{}, output)
+		printCollectionWarnings(warnings)
+		if err == nil {
+			fmt.Fprintf(os.Stdout, "Saved %s\n", output)
+		}
+		return err
 	}
 	donePath := os.Getenv(videoDoneEnv)
 	options.Recording = donePath != ""

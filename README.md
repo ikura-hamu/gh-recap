@@ -34,11 +34,19 @@ The default year is the current local year. API date boundaries use UTC, January
 ```sh
 gh recap md 2025
 gh recap md 2025 --output "my recap.md"
+gh recap image 2025
+gh recap image --demo --output "my recap.png"
 gh recap video 2025
 gh recap video --demo --output demo.mp4
 ```
 
-Markdown export includes the Detail view's activity counts, repository and language rankings, co-authors, daily activity, and collection warnings. Output defaults to `gh-recap_{year}.md` for Markdown and `gh-recap_{year}.mp4` for video. Both commands accept `--output` and replace an existing file after a successful export.
+Markdown export includes the Detail view's activity counts, repository and language rankings, co-authors, daily activity, and collection warnings.
+
+Press `s` on ENCORE to save the current TUI frame with its layout, scroll position, and background animation frame. PNGs show `GITHUB` and `RECAP` on separate lines above the year and include a gh-recap credit underneath. PNG exports use the bundled JetBrains Mono fonts. The regular font matches [Charm Freeze](https://github.com/charmbracelet/freeze/blob/main/font/JetBrainsMono-Regular.ttf), and bold text uses [JetBrains Mono Bold](https://github.com/JetBrains/JetBrainsMono/blob/19371302b95d218af43299bce79ddbddd0bc364d/fonts/ttf/JetBrainsMono-Bold.ttf). The [font license](internal/tui/fonts/OFL.txt) is also available via `gh recap --font-license`.
+
+`gh recap image` produces a 1200 × 640 PNG with ENCORE's wide terminal layout and a gh-recap credit.
+
+Exports default to `gh-recap_{year}.md`, `gh-recap_{year}.png`, or `gh-recap_{year}.mp4`. All export commands accept `--output` and replace an existing file after a successful export.
 
 Video export records the full autoplay sequence as a 1280 × 720 MP4 (16:9). It waits for collection before recording and takes about 72 seconds of playback plus collection and encoding time. Use `--include-private` to include accessible private activity in exports.
 
@@ -52,6 +60,7 @@ The video ends with a six-second credit screen showing how to install `gh recap`
 | `j` / `k` | Halve / double autoplay speed (0.5× to 4×) |
 | `Space` | Pause / resume autoplay and background animation |
 | `Enter` | Open / close details |
+| `s` | Save the ENCORE summary as a PNG |
 | `Esc` | Return from details |
 | `↑` / `↓` | Scroll. In details, `k` / `j` also scroll |
 | `Home` / `End` | Scroll to top / bottom |

@@ -90,10 +90,16 @@ func (m Model) content() pageContent {
 			Body: ranking(recap.Ranked(stats.Languages), chartWidth) + languagesNotes,
 		}
 	default:
-		return pageContent{
-			Eyebrow: summaryKicker, Title: fmt.Sprintf("%d · @%s", m.options.Year, m.login),
-			Body: m.encoreBody(stats),
-		}
+		return m.encoreContent(stats, explore)
+	}
+}
+
+func (m Model) encoreContent(stats recap.Stats, hint string) pageContent {
+	return pageContent{
+		Eyebrow: summaryKicker,
+		Metric:  fmt.Sprint(m.options.Year),
+		Title:   "@" + m.login,
+		Body:    m.encoreBody(stats, hint),
 	}
 }
 
@@ -111,7 +117,7 @@ func (m Model) overviewBody(stats recap.Stats) string {
 	return fmt.Sprintf(overviewBody, m.login, total, activity)
 }
 
-func (m Model) encoreBody(stats recap.Stats) string {
+func (m Model) encoreBody(stats recap.Stats, hint string) string {
 	metrics := [...]struct {
 		kind, label string
 		count       int
@@ -163,7 +169,6 @@ func (m Model) encoreBody(stats recap.Stats) string {
 		}
 	}
 
-	hint := explore
 	if incomplete {
 		hint += incompleteMark
 	}
@@ -171,7 +176,10 @@ func (m Model) encoreBody(stats recap.Stats) string {
 	if m.bodyHeight() >= lipgloss.Height(body)+4 {
 		body += farewell
 	}
-	return body + "\n" + muted.Render(hint)
+	if hint != "" {
+		body += "\n" + muted.Render(strings.TrimSpace(hint))
+	}
+	return body
 }
 
 func (m Model) kindContent(kind string, count, width int, eyebrow, label, notes string) pageContent {

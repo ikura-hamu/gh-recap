@@ -10,29 +10,31 @@ type keyMap struct {
 	Next, Previous, Pause, Details, Back, Quit key.Binding
 	Down, Up, Top, Bottom, PageDown, PageUp    key.Binding
 	Slower, Faster                             key.Binding
+	SaveImage                                  key.Binding
 }
 
 var controls = keyMap{
-	Next:     key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("←/→ h/l", "move")),
-	Previous: key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "previous")),
-	Slower:   key.NewBinding(key.WithKeys("j"), key.WithHelp("j", "half speed")),
-	Faster:   key.NewBinding(key.WithKeys("k"), key.WithHelp("k", "double speed")),
-	Pause:    key.NewBinding(key.WithKeys("space"), key.WithHelp("Space", "pause")),
-	Details:  key.NewBinding(key.WithKeys("enter"), key.WithHelp("Enter", "details")),
-	Back:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("Esc", "back")),
-	Quit:     key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
-	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↑/↓", "scroll")),
-	Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "up")),
-	Top:      key.NewBinding(key.WithKeys("home"), key.WithHelp("Home", "top")),
-	Bottom:   key.NewBinding(key.WithKeys("end"), key.WithHelp("End", "bottom")),
-	PageDown: key.NewBinding(key.WithKeys("pgdown", "ctrl+f"), key.WithHelp("PgDn", "page down")),
-	PageUp:   key.NewBinding(key.WithKeys("pgup", "ctrl+b"), key.WithHelp("PgUp", "page up")),
+	Next:      key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("←/→ h/l", "move")),
+	Previous:  key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "previous")),
+	Slower:    key.NewBinding(key.WithKeys("j"), key.WithHelp("j", "half speed")),
+	Faster:    key.NewBinding(key.WithKeys("k"), key.WithHelp("k", "double speed")),
+	Pause:     key.NewBinding(key.WithKeys("space"), key.WithHelp("Space", "pause")),
+	Details:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("Enter", "details")),
+	Back:      key.NewBinding(key.WithKeys("esc"), key.WithHelp("Esc", "back")),
+	Quit:      key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
+	Down:      key.NewBinding(key.WithKeys("down"), key.WithHelp("↑/↓", "scroll")),
+	Up:        key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "up")),
+	Top:       key.NewBinding(key.WithKeys("home"), key.WithHelp("Home", "top")),
+	Bottom:    key.NewBinding(key.WithKeys("end"), key.WithHelp("End", "bottom")),
+	PageDown:  key.NewBinding(key.WithKeys("pgdown", "ctrl+f"), key.WithHelp("PgDn", "page down")),
+	PageUp:    key.NewBinding(key.WithKeys("pgup", "ctrl+b"), key.WithHelp("PgUp", "page up")),
+	SaveImage: key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "save PNG")),
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
 	speed := k.Faster
 	speed.SetHelp("j/k", "speed")
-	return []key.Binding{k.Next, k.Pause, k.Details, k.Quit, speed, k.Down, k.Back}
+	return []key.Binding{k.SaveImage, k.Next, k.Pause, k.Details, k.Quit, speed, k.Down, k.Back}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
@@ -47,6 +49,7 @@ func (m Model) helpView(width int) string {
 	h.Styles.ShortDesc = muted
 	h.Styles.ShortSeparator = muted
 	keys := controls
+	keys.SaveImage.SetEnabled(m.canSaveImage())
 	if m.paused {
 		keys.Pause.SetHelp("Space", "resume")
 	}
@@ -66,6 +69,10 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 		return tea.Quit
 	case m.tooSmall():
 		return nil
+	case key.Matches(msg, controls.SaveImage):
+		if m.canSaveImage() && !msg.IsRepeat {
+			return m.saveImage()
+		}
 	case key.Matches(msg, controls.Slower):
 		if m.showDetails {
 			m.viewport.ScrollDown(1)

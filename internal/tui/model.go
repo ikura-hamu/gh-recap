@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"time"
 
@@ -50,6 +51,9 @@ type Model struct {
 	speed            float64
 	elapsed          time.Duration
 	lastTick         time.Time
+	savingImage      bool
+	imageStatus      string
+	imageExport      bool
 
 	loading       spinner.Model
 	viewport      viewport.Model
@@ -136,6 +140,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Kind == recap.KindCommits {
 			command = func() tea.Msg { return m.loadCoauthors(msg.Events) }
 		}
+	case imageSavedMsg:
+		m.savingImage = false
+		if msg.err != nil {
+			m.imageStatus = fmt.Sprintf("PNG export failed · %v", msg.err)
+		} else {
+			m.imageStatus = "Saved " + msg.name
+		}
 	case tea.WindowSizeMsg:
 		m.transition.from = ""
 		wasSmall := m.tooSmall()
@@ -204,4 +215,35 @@ func (m Model) loadActivity(kind string) recap.Result {
 	ctx, cancel := context.WithTimeout(m.ctx, 2*time.Minute)
 	defer cancel()
 	return recap.Fetch(ctx, m.api, m.options, kind)
+}
+
+// collect runs the recap's activity collection without starting the UI.
+func collect(ctx context.Context, options recap.Options, api recap.API, includeCoauthors bool) (Model, error) {
+	m := New(ctx, options, api)
+	viewer := m.loadViewer()
+	if viewer.err != nil {
+		return m, fmt.Errorf("couldn't load GitHub identity: %w", viewer.err)
+	}
+	m.login = viewer.login
+	loader := m
+	sourceCount := len(recap.Kinds)
+	if includeCoauthors {
+		sourceCount++
+	}
+	results := make(chan recap.Result, sourceCount)
+	for _, kind := range recap.Kinds {
+		go func() { results <- loader.loadActivity(kind) }()
+	}
+	for range sourceCount {
+		select {
+		case <-ctx.Done():
+			return m, ctx.Err()
+		case result := <-results:
+			m.acceptResult(result)
+			if includeCoauthors && result.Kind == recap.KindCommits {
+				go func() { results <- loader.loadCoauthors(result.Events) }()
+			}
+		}
+	}
+	return m, ctx.Err()
 }

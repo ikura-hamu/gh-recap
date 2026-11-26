@@ -19,7 +19,10 @@ type contentLayout struct {
 }
 
 func (m Model) scrollLayout() contentLayout {
-	content := m.content()
+	return m.layoutContent(m.content())
+}
+
+func (m Model) layoutContent(content pageContent) contentLayout {
 	headingWidth := m.contentWidth()
 	if m.wide() {
 		headingWidth = sidebarWidth - 3
@@ -45,7 +48,7 @@ func (m Model) scrollLayout() contentLayout {
 		parts = append(parts, titleStyle.Render(ansi.Wrap(content.Title, headingWidth, " ")))
 	}
 	heading := strings.Join(parts, "\n")
-	height := max(1, m.bodyHeight()-lipgloss.Height(heading)-len(headingGap)-scrollHintRows)
+	height := max(1, m.bodyHeight()+m.imageBannerExtraRows()-lipgloss.Height(heading)-len(headingGap)-scrollHintRows)
 	if m.wide() {
 		height = max(1, m.bodyHeight()-scrollHintRows)
 	}
@@ -126,9 +129,21 @@ func (m Model) View() tea.View {
 		return m.screenView(m.sizeWarning())
 	}
 	width := m.contentWidth()
-	body := lipgloss.NewStyle().Height(m.bodyHeight()).MaxHeight(m.bodyHeight()).Render(m.transitionBodyView())
+	footer := ink(m.color()).Render(ansi.Truncate(m.statusView(), width, "…")) + "\n" + m.helpView(width)
+	return m.renderScreen(m.transitionBodyView(), footer)
+}
+
+func (m Model) renderScreen(body, footer string) tea.View {
+	width := m.contentWidth()
+	extraRows := m.imageBannerExtraRows()
+	if m.imageExport && m.wide() {
+		extraRows = max(0, lipgloss.Height(body)-m.bodyHeight())
+	}
+	bodyHeight := m.bodyHeight() + extraRows
+	body = lipgloss.NewStyle().Height(bodyHeight).MaxHeight(bodyHeight).Render(body)
+	m.height += extraRows
 	content := m.headerView(width) + "\n\n" + body + "\n" +
-		m.playbackBar(width) + "\n" + ink(m.color()).Render(ansi.Truncate(m.statusView(), width, "…")) + "\n" + m.helpView(width)
+		m.playbackBar(width) + "\n" + footer
 	content = lipgloss.NewStyle().Width(width).Render(content)
 	content = lipgloss.NewStyle().
 		MaxWidth(max(1, m.width)).
@@ -183,6 +198,10 @@ func (m Model) headerView(width int) string {
 	if m.options.Demo {
 		scope = demoPrefix + scope
 	}
+	if m.imageExport {
+		label := muted.Render(scope)
+		return strings.Repeat(" ", max(0, width-lipgloss.Width(label))) + label
+	}
 	badge := lipgloss.NewStyle().
 		Background(lipgloss.Color(m.color())).
 		Foreground(lipgloss.Color("#191425")).
@@ -222,6 +241,10 @@ func (m Model) bodyView() string {
 		last := min(view.TotalLineCount(), view.YOffset()+view.Height())
 		body += muted.Render(fmt.Sprintf(scrollHint, first, last, view.TotalLineCount()))
 	}
+	return m.arrangeBody(heading, body)
+}
+
+func (m Model) arrangeBody(heading, body string) string {
 	if !m.wide() {
 		return heading + headingGap + body
 	}
@@ -298,6 +321,9 @@ func (m Model) statusView() string {
 		if len(m.warnings) > 0 {
 			status += warningsHint
 		}
+	}
+	if m.canSaveImage() && m.imageStatus != "" {
+		status = m.imageStatus + " · " + status
 	}
 	return status
 }

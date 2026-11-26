@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/ikura-hamu/gh-recap/internal/recap"
+	"github.com/ikura-hamu/gh-recap/internal/tui"
 )
 
 type commandOptions struct {
 	recap.Options
-	command string
-	output  string
+	command     string
+	output      string
+	fontLicense bool
 }
 
 func parseOptions(args []string, out io.Writer) (commandOptions, error) {
@@ -24,7 +26,8 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	flags.BoolVar(&options.IncludePrivate, "include-private", false, "include accessible private repositories")
 	flags.BoolVar(&options.Demo, "demo", false, "explore fictional activity without authentication")
 	flags.BoolVar(&options.NoAnimation, "no-animation", false, "disable decorative animations (autoplay stays enabled)")
-	flags.Func("output", "output file path for md or video", func(path string) error {
+	flags.BoolVar(&options.fontLicense, "font-license", false, "print the bundled JetBrains Mono license")
+	flags.Func("output", "output file path for md, image, or video", func(path string) error {
 		if path == "" {
 			return fmt.Errorf("output path cannot be empty")
 		}
@@ -33,7 +36,7 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	})
 	flags.Usage = func() {
 		fmt.Fprintln(out, "Usage: gh recap [YEAR] [--include-private] [--demo] [--no-animation]")
-		fmt.Fprintln(out, "       gh recap {md|video} [YEAR] [--output FILE] [--include-private] [--demo] [--no-animation]")
+		fmt.Fprintln(out, "       gh recap {md|image|video} [YEAR] [--output FILE] [--include-private] [--demo] [--no-animation]")
 		flags.PrintDefaults()
 	}
 	flagArgs := []string{}
@@ -54,7 +57,7 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 			i++
 			continue
 		}
-		if argument == "md" || argument == "video" {
+		if argument == "md" || argument == "image" || argument == "video" {
 			if options.command != "" {
 				return options, fmt.Errorf("specify only one export command")
 			}
@@ -82,14 +85,17 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	}
 	if options.command == "" {
 		if options.output != "" {
-			return options, fmt.Errorf("--output requires the md or video command")
+			return options, fmt.Errorf("--output requires the md, image, or video command")
 		}
 	} else if options.output == "" {
-		extension := "md"
-		if options.command == "video" {
-			extension = "mp4"
+		switch options.command {
+		case "md":
+			options.output = fmt.Sprintf("gh-recap_%d.md", options.Year)
+		case "image":
+			options.output = tui.ImageFilename(options.Year)
+		case "video":
+			options.output = fmt.Sprintf("gh-recap_%d.mp4", options.Year)
 		}
-		options.output = fmt.Sprintf("gh-recap_%d.%s", options.Year, extension)
 	}
 	return options, nil
 }
