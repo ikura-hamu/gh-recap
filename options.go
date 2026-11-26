@@ -27,7 +27,7 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	flags.BoolVar(&options.Demo, "demo", false, "explore fictional activity without authentication")
 	flags.BoolVar(&options.NoAnimation, "no-animation", false, "disable decorative animations (autoplay stays enabled)")
 	flags.BoolVar(&options.fontLicense, "font-license", false, "print the bundled JetBrains Mono license")
-	flags.Func("output", "output file path for md, image, or video", func(path string) error {
+	flags.Func("output", "export file path (defaults to gh-recap_YEAR with the format's extension)", func(path string) error {
 		if path == "" {
 			return fmt.Errorf("output path cannot be empty")
 		}
@@ -35,8 +35,18 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 		return nil
 	})
 	flags.Usage = func() {
-		fmt.Fprintln(out, "Usage: gh recap [YEAR] [--include-private] [--demo] [--no-animation]")
-		fmt.Fprintln(out, "       gh recap {md|image|video} [YEAR] [--output FILE] [--include-private] [--demo] [--no-animation]")
+		fmt.Fprintln(out, `Usage: gh recap [YEAR] [OPTIONS]
+       gh recap {md|image|video} [YEAR] [OPTIONS]
+
+YEAR defaults to the current year. Without a subcommand, gh recap opens the
+terminal recap. Press s on ENCORE to save a PNG.
+
+Subcommands:
+  md      Export activity details as Markdown (.md)
+  image   Export the recap summary as a PNG (.png)
+  video   Record the full recap as an MP4 (.mp4). Requires Bash, vhs, ttyd, and ffmpeg.
+
+Options:`)
 		flags.PrintDefaults()
 	}
 	flagArgs := []string{}
