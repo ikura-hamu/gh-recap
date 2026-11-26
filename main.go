@@ -32,6 +32,8 @@ func run() error {
 		return recordVideo(ctx, options)
 	case "md":
 		return exportMarkdown(ctx, options, &recap.GitHub{})
+	case "short-text":
+		return exportShortText(ctx, options, &recap.GitHub{})
 	case "image":
 		output, err := filepath.Abs(options.output)
 		if err != nil {

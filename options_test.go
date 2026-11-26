@@ -33,6 +33,7 @@ func TestExportArguments(t *testing.T) {
 		output  string
 	}{
 		{[]string{"md", "2025", "--demo"}, "md", "gh-recap_2025.md"},
+		{[]string{"short-text", "2025", "--demo"}, "short-text", ""},
 		{[]string{"image", "2025", "--demo"}, "image", "gh-recap_2025.png"},
 		{[]string{"image", "--output", "my recap.png", "--demo", "2025"}, "image", "my recap.png"},
 		{[]string{"video", "2025", "--demo"}, "video", "gh-recap_2025.mp4"},
@@ -44,7 +45,7 @@ func TestExportArguments(t *testing.T) {
 			t.Fatalf("parse %v: %+v %v", test.args, options, err)
 		}
 	}
-	for _, args := range [][]string{{"video", "--output"}, {"md", "--output="}, {"--output", "recap.md"}, {"md", "video"}, {"image", "md"}} {
+	for _, args := range [][]string{{"video", "--output"}, {"md", "--output="}, {"--output", "recap.md"}, {"md", "video"}, {"image", "md"}, {"short-text", "--output", "recap.txt"}} {
 		if _, err := parseOptions(args, io.Discard); err == nil {
 			t.Errorf("accepted invalid arguments %v", args)
 		}
