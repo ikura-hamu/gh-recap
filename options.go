@@ -26,6 +26,7 @@ func parseOptions(args []string, out io.Writer) (commandOptions, error) {
 	flags.BoolVar(&options.IncludePrivate, "include-private", false, "include accessible private repositories")
 	flags.BoolVar(&options.Demo, "demo", false, "explore fictional activity without authentication")
 	flags.BoolVar(&options.NoAnimation, "no-animation", false, "disable decorative animations (autoplay stays enabled)")
+	flags.BoolVar(&options.DPGK, "dpgk", false, "enable flashy Dopagaki effects (ignored with --no-animation)")
 	flags.BoolVar(&options.fontLicense, "font-license", false, "print the bundled JetBrains Mono license")
 	flags.Func("output", "export file path (defaults to gh-recap_YEAR with the format's extension)", func(path string) error {
 		if path == "" {

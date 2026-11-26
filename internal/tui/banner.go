@@ -107,9 +107,15 @@ func (m Model) bannerText(name string, width int) string {
 	if m.compactBanner() {
 		rows = compactRows(rows)
 	}
+	phase := m.page
+	if m.dpgkEffects() && m.titleFlashing() {
+		phase++
+	}
 	for i, row := range rows {
 		color := m.color()
-		if i >= len(rows)/2+1 {
+		if m.dpgkEffects() {
+			color = dpgkColor(phase + 2*i)
+		} else if i >= len(rows)/2+1 {
 			color = colors[(m.page+1)%len(colors)]
 		}
 		rows[i] = ink(color).Render(row)

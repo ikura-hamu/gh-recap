@@ -18,7 +18,7 @@ func TestRecordVideo(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("PATH", dir)
 	options := commandOptions{
-		Options: recap.Options{Year: 2025, Demo: true, IncludePrivate: true, NoAnimation: true},
+		Options: recap.Options{Year: 2025, Demo: true, IncludePrivate: true, NoAnimation: true, DPGK: true},
 		output:  filepath.Join(dir, "test video.mp4"),
 	}
 	ctx := context.Background()
@@ -32,7 +32,7 @@ tape=
 while IFS= read -r line; do tape="$tape
 $line"; done
 case "$tape" in
-  *"Output recap.mp4"*"Set Width 1280"*"Set Height 720"*"2025 --include-private --demo --no-animation"*"FINISHED"*"Sleep 6s"*) ;;
+  *"Output recap.mp4"*"Set Width 1280"*"Set Height 720"*"2025 --include-private --demo --no-animation --dpgk"*"FINISHED"*"Sleep 6s"*) ;;
   *) exit 2 ;;
 esac
 printf 'test recording' > recap.mp4

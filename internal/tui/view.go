@@ -150,9 +150,8 @@ func (m Model) renderScreen(body, footer string) tea.View {
 		MaxHeight(max(1, m.height)).
 		Padding(verticalPadding, horizontalPadding).
 		Render(content)
-	// The slide is already moving the entire body. Resume the background when
-	// it settles so the high-frequency slide ticks only draw one animation.
-	if !m.transition.active() {
+	// The regular background pauses during slides. Dopagaki effects animate through them.
+	if !m.transition.active() || m.dpgkEffects() {
 		content = m.sparkleBackground(content)
 	}
 	return m.screenView(content)

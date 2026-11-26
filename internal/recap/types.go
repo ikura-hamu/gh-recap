@@ -21,6 +21,7 @@ type Options struct {
 	IncludePrivate bool
 	Demo           bool
 	NoAnimation    bool
+	DPGK           bool
 	Recording      bool
 }
 

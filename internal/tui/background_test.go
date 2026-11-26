@@ -112,6 +112,7 @@ func TestSparklesPreserveContent(t *testing.T) {
 func TestBackgroundWithoutAnimation(t *testing.T) {
 	m := readyModel()
 	m.options.NoAnimation = true
+	m.options.DPGK = true
 	if m.sparkleBackground("content") != "content" {
 		t.Fatal("no-animation should disable sparkles")
 	}
@@ -125,22 +126,42 @@ func TestBackgroundWithoutAnimation(t *testing.T) {
 	}
 }
 
-func TestEachPageHasDistinctBackgroundMotion(t *testing.T) {
+func TestDPGKBackgroundMovesAroundContent(t *testing.T) {
 	m := readyModel()
-	m.width, m.height = minimumWidth, minimumHeight
-	seen := make(map[string]string)
-	for page, definition := range pageDefinitions {
-		m.page = page
-		m.sparkleFrame = 4
-		first := ansi.Strip(m.sparkleBackground(""))
-		m.sparkleFrame = 13
-		second := ansi.Strip(m.sparkleBackground(""))
-		if strings.TrimSpace(first) == "" || first == second {
-			t.Errorf("%s has no visible motion", definition.Banner)
-		}
-		if previous, exists := seen[first]; exists {
-			t.Errorf("%s and %s share a background pattern", previous, definition.Banner)
-		}
-		seen[first] = definition.Banner
+	m.options.DPGK = true
+	content := "\n\n     " + accent.Render("日本語 · GH RECAP ✦")
+	first := ansi.Strip(m.sparkleBackground(content))
+	m.sparkleFrame++
+	second := ansi.Strip(m.sparkleBackground(content))
+	if !strings.Contains(first, "▓") || first == second {
+		t.Fatal("expected visible, moving Dopagaki beams")
+	}
+	if !strings.Contains(second, "日本語 · GH RECAP ✦") {
+		t.Fatal("Dopagaki beams should preserve foreground text")
+	}
+}
+
+func TestEachPageHasDistinctBackgroundMotion(t *testing.T) {
+	for _, dpgk := range []bool{false, true} {
+		t.Run(fmt.Sprintf("dpgk=%t", dpgk), func(t *testing.T) {
+			m := readyModel()
+			m.options.DPGK = dpgk
+			m.width, m.height = minimumWidth, minimumHeight
+			seen := make(map[string]string)
+			for page, definition := range pageDefinitions {
+				m.page = page
+				m.sparkleFrame = 4
+				first := ansi.Strip(m.sparkleBackground(""))
+				m.sparkleFrame = 13
+				second := ansi.Strip(m.sparkleBackground(""))
+				if strings.TrimSpace(first) == "" || first == second {
+					t.Errorf("%s has no visible motion", definition.Banner)
+				}
+				if previous, exists := seen[first]; exists {
+					t.Errorf("%s and %s share a background pattern", previous, definition.Banner)
+				}
+				seen[first] = definition.Banner
+			}
+		})
 	}
 }

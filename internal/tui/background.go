@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+func (m Model) dpgkEffects() bool { return m.options.DPGK && !m.options.NoAnimation }
+
 // Keep a full cell of clearance around content, including wide characters
 // and chart bars, regardless of which animation is playing.
 func (m Model) sparkleBackground(content string) string {
@@ -55,6 +57,7 @@ type backgroundEffect struct {
 	page, width, height int
 	frame               int
 	dim, bright         string
+	dpgk                bool
 }
 
 func (m Model) backgroundEffect() backgroundEffect {
@@ -73,10 +76,20 @@ func (m Model) backgroundEffect() backgroundEffect {
 		pageSummary:      {"#61455D", "#D694BA"},
 	}
 	shades := palette[m.page]
-	return backgroundEffect{m.page, m.width, m.height, int(m.sparkleFrame % 100000), shades[0], shades[1]}
+	frame := int(m.sparkleFrame % 100000)
+	if m.dpgkEffects() && m.transition.active() {
+		frame += m.transition.frame
+	}
+	return backgroundEffect{
+		page: m.page, width: m.width, height: m.height,
+		frame: frame, dim: shades[0], bright: shades[1], dpgk: m.dpgkEffects(),
+	}
 }
 
 func (e backgroundEffect) cell(x, y int) (string, string) {
+	if e.dpgk {
+		return e.dpgkCell(x, y)
+	}
 	t := float64(e.frame) * 0.1
 	switch e.page {
 	case pageOverview: // Aurora ribbons bend and drift across the screen.

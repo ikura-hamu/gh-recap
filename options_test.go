@@ -51,3 +51,10 @@ func TestExportArguments(t *testing.T) {
 		}
 	}
 }
+
+func TestDPGKArguments(t *testing.T) {
+	options, err := parseOptions([]string{"--dpgk", "2025", "--no-animation"}, io.Discard)
+	if err != nil || !options.DPGK || !options.NoAnimation || options.Year != 2025 {
+		t.Fatalf("parse --dpgk: %+v %v", options, err)
+	}
+}

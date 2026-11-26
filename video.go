@@ -99,6 +99,9 @@ func videoTape(options commandOptions) string {
 	if options.NoAnimation {
 		command += " --no-animation"
 	}
+	if options.DPGK {
+		command += " --dpgk"
+	}
 	// Keep the shell's echoed command from matching the exit marker.
 	command += ` 2>"$GH_RECAP_VIDEO_LOG"; echo GH_RECAP_CAPTURE_""EXITED`
 	return fmt.Sprintf(`Output %s
