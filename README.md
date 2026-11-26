@@ -2,6 +2,8 @@
 
 Replay your GitHub year in the terminal. Browse your activity, streaks, repositories, languages, and co-authors, or export your recap as Markdown, PNG, or video.
 
+![](./docs/image.png)
+
 ## Install
 
 Install [GitHub CLI](https://cli.github.com/), then run:
